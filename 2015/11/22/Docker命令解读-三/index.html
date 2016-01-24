@@ -1,0 +1,394 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Docker命令解读(三) | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="Docker命令解读系列文章将系统讲解Docker使用的命令，方便大家学习Docker的基本操作。在写这个系列文章的时候，主要参考了Docker官方的文档，有些内容是直接的翻译。原文档地址 Docker Docs转载请注明出处">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/11/22/Docker命令解读-三/" title="Docker命令解读(三)" itemprop="url">Docker命令解读(三)</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-11-22T11:35:36.000Z" itemprop="datePublished">2015-11-22</time>
+    更新日期:<time datetime="2015-11-30T03:00:27.000Z" itemprop="dateModified">2015-11-30</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">build</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1.1"><span class="toc-number">1.0.1.</span> <span class="toc-text">build with PATH</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1.2"><span class="toc-number">1.0.2.</span> <span class="toc-text">build with URL</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1.3"><span class="toc-number">1.0.3.</span> <span class="toc-text">build with -</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1.4"><span class="toc-number">1.0.4.</span> <span class="toc-text">-t标识</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1.5"><span class="toc-number">1.0.5.</span> <span class="toc-text">-f标识</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">commit</span></a></li></ol>
+		</div>
+		
+		<p>Docker命令解读系列文章将系统讲解Docker使用的命令，方便大家学习Docker的基本操作。在写这个系列文章的时候，主要参考了Docker官方的文档，有些内容是直接的翻译。原文档地址 <a href="https://docs.docker.com/" target="_blank" rel="external">Docker Docs</a><br><strong>转载请注明出处</strong><br><a id="more"></a><br>这篇文章讲解下面几个命令：</p>
+<ul>
+<li><a href="#1">build</a><ul>
+<li><a href="#1.1">build with PATH</a></li>
+<li><a href="#1.2">build with URL</a></li>
+<li><a href="#1.3">build woth -</a></li>
+<li><a href="#1.4">-t 标识</a></li>
+<li><a href="#1.5">-f标识</a></li>
+</ul>
+</li>
+<li><a href="#2">commit</a></li>
+</ul>
+<h2 id="1">build</h2>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">Usage: docker build [OPTIONS] PATH | URL | -</span><br><span class="line"></span><br><span class="line">Build a new image from the <span class="built_in">source</span> code at PATH</span><br><span class="line"></span><br><span class="line">  --build-arg=[]                  Set build-time variables</span><br><span class="line">  --cpu-shares                    CPU Shares (relative weight)</span><br><span class="line">  --cgroup-parent=<span class="string">""</span>              Optional parent cgroup <span class="keyword">for</span> the container</span><br><span class="line">  --cpu-period=<span class="number">0</span>                  Limit the CPU CFS (Completely Fair Scheduler) period</span><br><span class="line">  --cpu-quota=<span class="number">0</span>                   Limit the CPU CFS (Completely Fair Scheduler) quota</span><br><span class="line">  --cpuset-cpus=<span class="string">""</span>                CPUs <span class="keyword">in</span> <span class="built_in">which</span> to allow execution, e.g. `<span class="number">0</span>-<span class="number">3</span>`, `<span class="number">0</span>,<span class="number">1</span>`</span><br><span class="line">  --cpuset-mems=<span class="string">""</span>                MEMs <span class="keyword">in</span> <span class="built_in">which</span> to allow execution, e.g. `<span class="number">0</span>-<span class="number">3</span>`, `<span class="number">0</span>,<span class="number">1</span>`</span><br><span class="line">  --disable-content-trust=<span class="literal">true</span>    Skip image verification</span><br><span class="line">  <span class="operator">-f</span>, --file=<span class="string">""</span>                   Name of the Dockerfile (Default is <span class="string">'PATH/Dockerfile'</span>)</span><br><span class="line">  --force-rm=<span class="literal">false</span>                Always remove intermediate containers</span><br><span class="line">  --help=<span class="literal">false</span>                    Print usage</span><br><span class="line">  -m, --memory=<span class="string">""</span>                 Memory <span class="built_in">limit</span> <span class="keyword">for</span> all build containers</span><br><span class="line">  --memory-swap=<span class="string">""</span>                Total memory (memory + swap), `-<span class="number">1</span>` to <span class="built_in">disable</span> swap</span><br><span class="line">  --no-cache=<span class="literal">false</span>                Do not use cache when building the image</span><br><span class="line">  --pull=<span class="literal">false</span>                    Always attempt to pull a newer version of the image</span><br><span class="line">  -q, --quiet=<span class="literal">false</span>               Suppress the verbose output generated by the containers</span><br><span class="line">  --rm=<span class="literal">true</span>                       Remove intermediate containers after a successful build</span><br><span class="line">  -t, --tag=<span class="string">""</span>                    Repository name (and optionally a tag) <span class="keyword">for</span> the image</span><br><span class="line">  --ulimit=[]                     U<span class="built_in">limit</span> options</span><br></pre></td></tr></table></figure>
+<p><code>docker build</code>命令用来通过<code>Dockerfile</code>和上下文(<code>context</code>)文件创建镜像，<code>context</code>可以通过<code>PATH</code>或<code>URL</code>属性指出，<code>build</code>进程有<code>context</code>下所有文件的访问权限。<br>通过<code>URL</code>你可以指定一个<code>git</code>代码库，这样<code>git</code>代码库的作用就是<code>context</code>。Docker将git库中的内容clone到你的计算机上，然后将它们传送给<code>docker daemon</code>，用来创建镜像。<br>当使用<code>git</code>时，可以指定分支和具体的文件夹，中间用冒号<code>:</code>分割。例如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build https://github.com/docker/rootfs.git<span class="comment">#container:docker</span></span><br></pre></td></tr></table></figure></p>
+<p>上面的例子中的上下文<code>context</code>是container分支下的docker文件夹。<br>更多的格式如下：<br><img src="/img/2015-11-22-1.png" alt=""><br>除了指定上下文之外，你也可以通过<code>URL</code>指定一个单独的<code>Dockerfile</code>文件，或者通过<code>STDIN</code>标准输入流传递<code>Dockerfile</code>文件，格式为：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build - &lt; Dockerfile</span><br></pre></td></tr></table></figure></p>
+<p>如果你通过<code>URL</code>指定一个文件或者通过<code>STDIN</code>传递了一个文件，Docker会将其内容作为<code>Dockerfile</code>的内容，并且任何<code>-f</code>，<code>--file</code>参数都会被忽略。这种情况下，没有上下文<code>context</code>。<br>默认情况下，<code>Docker</code>会在<code>context</code>的根目录中寻找名为<code>Dockerfile</code>的文件。你可以通过<code>-f</code>， <code>--file</code>参数指定一个文件作为<code>Dockerfile</code>文件。但指定的文件必须包含在<code>context</code>中，如果你要指定一个相对路径，必须是相对于当前文件夹的。<br>通常情况下，最好新建一个文件夹，并且仅将创建镜像需要的文件或文件夹拷贝到新建的文件夹下。或者，你也可以编写一个<code>.dockerignore</code>文件来指定那些文件或文件夹是用不到的。请参考<a href="https://docs.docker.com/engine/reference/builder/#dockerignore-file" target="_blank" rel="external">.dockerignore file</a></p>
+<p>build命令执行成功后，build进程会返回一个0值，若失败返回非0值。</p>
+<h4 id="1.1">build with PATH</h4>
+
+<p>一般情况下，我们会通过<code>.</code>将当前文件夹作为上下文传递给<code>docker daemon</code>，如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build .</span><br></pre></td></tr></table></figure></p>
+<p>这样，<code>Docker</code>会在当前文件夹下寻找名为“Dockerfile”的文件，并将当前文件夹下的所有的文件和文件夹传递给<code>docker daemon</code>进程(如果没有编写<code>.dockerignore</code>)。记住，<code>docker client</code>是可以和远程<code>docker daemon</code>通信的，这种情况下，<code>Docker</code>需要将<code>context</code>中的所有文件和文件夹通过网络传送给<code>docker daemon</code>，所以，请不要将无用的内容包括在<code>context</code>中。<br><strong>Note:</strong>当运行<code>docker build</code>命令时，终端输出的”Sending build context”文件就是表示在向<code>docker daemon</code>传送文件。</p>
+<h4 id="1.2">build with URL</h4>
+
+<p>例如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build github.com/creack/docker-firefox</span><br></pre></td></tr></table></figure></p>
+<p>这将会clone git库到本地并将其作为context，其根目录下的名为“Dockerfile”的文件被用作build时的<code>Dockerfile</code>。<br>你可以通过两种方式指定git库，<code>git://</code>或<code>git@</code>。</p>
+<h4 id="1.3">build with -</h4>
+
+<p>这种方式下，<code>Docker</code>会从<code>STDIN</code>中读取一个<code>Dockerfile</code>,且这种方式没有<code>context</code>上下文。所以将不会有任何本地文件或文件夹传送给<code>docker daemon</code>。并且<code>Dockerfile</code>中的<code>ADD</code>指令也仅在指定的是一个URL时有效。<br>但下面的方式：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build - &lt; context.tar.gz</span><br></pre></td></tr></table></figure></p>
+<p>将会从<code>STDIN</code>读取一个压缩的上下文<code>context</code>并传送给<code>docker daemon</code>。支持的压缩格式为：<code>bzip2</code>，<code>gzip</code>和<code>xz</code>。</p>
+<h4 id="1.4">-t标识</h4>
+
+<p><code>-t</code>标识用来指定build后的镜像的<code>repository</code>和标签<code>Tag</code>(可选项)。格式为：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build -t vieux/apache:<span class="number">2.0</span> .</span><br></pre></td></tr></table></figure></p>
+<h4 id="1.5">-f标识</h4>
+
+<p><code>-f</code>标识用来指定build时的<code>Dockerfile</code>文件。例如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build <span class="operator">-f</span> Dockerfile.debug .</span><br></pre></td></tr></table></figure></p>
+<p>上面的命令使用当前目录<code>.</code>下的“Dockerfile.debug”文件作为<code>Dockerfile</code>。</p>
+<h2 id="2">commit</h2>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Usage: docker commit [OPTIONS] CONTAINER [REPOSITORY[:TAG]]</span><br><span class="line"></span><br><span class="line">Create a new image from a container<span class="string">'s changes</span><br><span class="line"></span><br><span class="line">  -a, --author=""     Author (e.g., "John Hannibal Smith &lt;hannibal@a-team.com&gt;")</span><br><span class="line">  -c, --change=[]     Apply specified Dockerfile instructions while committing the image</span><br><span class="line">  --help=false        Print usage</span><br><span class="line">  -m, --message=""    Commit message</span><br><span class="line">  -p, --pause=true    Pause container during commit</span></span><br></pre></td></tr></table></figure>
+<p><code>commit</code>命令用于从容器创建镜像，但官方更推荐使用<code>Dockerfile</code>创建镜像。<br><strong>Note:</strong><code>commit</code>操作不会提交容器中的卷<code>volumes</code>中的任何信息，即卷中的信息不会出现在创建额镜像中。<br>默认情况下，被<code>commit</code>的容器中的所有进程都会暂停<code>paused</code>，如果你并不期望这么做，可以通过<code>-p</code>或<code>--pause</code>标识改变它。</p>
+<p><code>--change</code>选项用来像要创建的镜像添加<code>Dockerfile</code>指令，支持如下的<code>Dockerfile</code>指令：<br><code>CMD</code>，<code>ENTERPOINT</code>，<code>ENV</code>，<code>EXPOSE</code>，<code>LABEL</code>，<code>ONBUILD</code>，<code>USER</code>，<code>VOLUME</code>，<code>WORKDIR</code><br>例如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker commit --change <span class="string">"ENV DEBUG true"</span> c3f279d17e0a  SvenDowideit/testimage:version3</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker commit --change=<span class="string">'CMD ["apachectl", "-DFOREGROUND"]'</span> -c <span class="string">"EXPOSE 80"</span> c3f279d17e0a  SvenDowideit/testimage:version4</span><br></pre></td></tr></table></figure>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/docker/">docker</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Docker-Commands/">Docker Commands</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/11/22/Docker命令解读-三/" data-title="Docker命令解读(三) | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/11/23/Docker命令解读-四/" title="Docker命令解读(四)">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Docker命令解读(四)</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/11/21/Docker命令解读-二/"  title="Docker命令解读(二)">
+ <strong>NEXT:</strong><br/> 
+ <span>Docker命令解读(二)
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">build</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1.1"><span class="toc-number">1.0.1.</span> <span class="toc-text">build with PATH</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1.2"><span class="toc-number">1.0.2.</span> <span class="toc-text">build with URL</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1.3"><span class="toc-number">1.0.3.</span> <span class="toc-text">build with -</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1.4"><span class="toc-number">1.0.4.</span> <span class="toc-text">-t标识</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#1.5"><span class="toc-number">1.0.5.</span> <span class="toc-text">-f标识</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">commit</span></a></li></ol>
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>

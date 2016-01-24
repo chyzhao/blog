@@ -1,0 +1,380 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Docker命令解读(二) | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="Docker命令解读系列文章将系统讲解Docker使用的命令，方便大家学习Docker的基本操作。在写这个系列文章的时候，主要参考了Docker官方的文档，有些内容是直接的翻译。原文档地址 Docker Docs转载请注明出处">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/11/21/Docker命令解读-二/" title="Docker命令解读(二)" itemprop="url">Docker命令解读(二)</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-11-21T11:30:44.000Z" itemprop="datePublished">2015-11-21</time>
+    更新日期:<time datetime="2015-11-30T03:00:09.000Z" itemprop="dateModified">2015-11-30</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">Daemon socket Options</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">Docker ecexdriver options</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">Daemon DNS Options</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4"><span class="toc-number">4.</span> <span class="toc-text">Insecure Registries</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5"><span class="toc-number">5.</span> <span class="toc-text">Legacy Registry</span></a></li></ol>
+		</div>
+		
+		<p>Docker命令解读系列文章将系统讲解Docker使用的命令，方便大家学习Docker的基本操作。在写这个系列文章的时候，主要参考了Docker官方的文档，有些内容是直接的翻译。原文档地址 <a href="https://docs.docker.com/" target="_blank" rel="external">Docker Docs</a><br><strong>转载请注明出处</strong><br><a id="more"></a></p>
+<p><code>Docker</code>可以以两种模式启动，一种是<code>client</code>，一种是<code>daemon</code>，两者共用一个二进制文件。启动<code>daemon</code>就要使用<code>docker daemon</code>命令，使用<code>docker daemon --help</code>命令可以查看它的可选参数。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">Usage: docker daemon [OPTIONS]</span><br><span class="line"></span><br><span class="line">A self-sufficient runtime <span class="keyword">for</span> linux containers.</span><br><span class="line"></span><br><span class="line">Options:</span><br><span class="line">  --api-cors-header=<span class="string">""</span>                   Set CORS headers <span class="keyword">in</span> the remote API</span><br><span class="line">  -b, --bridge=<span class="string">""</span>                        Attach containers to a network bridge</span><br><span class="line">  --bip=<span class="string">""</span>                               Specify network bridge IP</span><br><span class="line">  -D, --debug=<span class="literal">false</span>                      Enable debug mode</span><br><span class="line">  --default-gateway=<span class="string">""</span>                   Container default gateway IPv4 address</span><br><span class="line">  --default-gateway-v6=<span class="string">""</span>                Container default gateway IPv6 address</span><br><span class="line">  --cluster-store=<span class="string">""</span>                     URL of the distributed storage backend</span><br><span class="line">  --cluster-advertise=<span class="string">""</span>                 Address of the daemon instance on the cluster</span><br><span class="line">  --cluster-store-opt=map[]              Set cluster options</span><br><span class="line">  --dns=[]                               DNS server to use</span><br><span class="line">  --dns-opt=[]                           DNS options to use</span><br><span class="line">  --dns-search=[]                        DNS search domains to use</span><br><span class="line">  --default-ulimit=[]                    Set default <span class="built_in">ulimit</span> settings <span class="keyword">for</span> containers</span><br><span class="line">  --exec-opt=[]                          Set <span class="built_in">exec</span> driver options</span><br><span class="line">  --exec-root=<span class="string">"/var/run/docker"</span>          Root of the Docker execdriver</span><br><span class="line">  --fixed-cidr=<span class="string">""</span>                        IPv4 subnet <span class="keyword">for</span> fixed IPs</span><br><span class="line">  --fixed-cidr-v6=<span class="string">""</span>                     IPv6 subnet <span class="keyword">for</span> fixed IPs</span><br><span class="line">  -G, --group=<span class="string">"docker"</span>                   Group <span class="keyword">for</span> the unix socket</span><br><span class="line">  -g, --graph=<span class="string">"/var/lib/docker"</span>          Root of the Docker runtime</span><br><span class="line">  -H, --host=[]                          Daemon socket(s) to connect to</span><br><span class="line">  --help=<span class="literal">false</span>                           Print usage</span><br><span class="line">  --icc=<span class="literal">true</span>                             Enable inter-container communication</span><br><span class="line">  --insecure-registry=[]                 Enable insecure registry communication</span><br><span class="line">  --ip=<span class="number">0.0</span>.<span class="number">0.0</span>                           Default IP when binding container ports</span><br><span class="line">  --ip-forward=<span class="literal">true</span>                      Enable net.ipv4.ip_forward</span><br><span class="line">  --ip-masq=<span class="literal">true</span>                         Enable IP masquerading</span><br><span class="line">  --iptables=<span class="literal">true</span>                        Enable addition of iptables rules</span><br><span class="line">  --ipv6=<span class="literal">false</span>                           Enable IPv6 networking</span><br><span class="line">  <span class="operator">-l</span>, --log-level=<span class="string">"info"</span>                 Set the logging level</span><br><span class="line">  --label=[]                             Set key=value labels to the daemon</span><br><span class="line">  --log-driver=<span class="string">"json-file"</span>               Default driver <span class="keyword">for</span> container logs</span><br><span class="line">  --log-opt=[]                           Log driver specific options</span><br><span class="line">  --mtu=<span class="number">0</span>                                Set the containers network MTU</span><br><span class="line">  --disable-legacy-registry=<span class="literal">false</span>        Do not contact legacy registries</span><br><span class="line">  -p, --pidfile=<span class="string">"/var/run/docker.pid"</span>    Path to use <span class="keyword">for</span> daemon PID file</span><br><span class="line">  --registry-mirror=[]                   Preferred Docker registry mirror</span><br><span class="line">  <span class="operator">-s</span>, --storage-driver=<span class="string">""</span>                Storage driver to use</span><br><span class="line">  --selinux-enabled=<span class="literal">false</span>                Enable selinux support</span><br><span class="line">  --storage-opt=[]                       Set storage driver options</span><br><span class="line">  --tls=<span class="literal">false</span>                            Use TLS; implied by --tlsverify</span><br><span class="line">  --tlscacert=<span class="string">"~/.docker/ca.pem"</span>         Trust certs signed only by this CA</span><br><span class="line">  --tlscert=<span class="string">"~/.docker/cert.pem"</span>         Path to TLS certificate file</span><br><span class="line">  --tlskey=<span class="string">"~/.docker/key.pem"</span>           Path to TLS key file</span><br><span class="line">  --tlsverify=<span class="literal">false</span>                      Use TLS and verify the remote</span><br><span class="line">  --userland-proxy=<span class="literal">true</span>                  Use userland proxy <span class="keyword">for</span> loopback traffic</span><br></pre></td></tr></table></figure></p>
+<p><code>docker daemon</code>用来管理所有的容器，是<code>Docker</code>最核心的部件之一。可以使用<code>docker daemon -D</code>启动<code>DEBUG</code>模式</p>
+<p>本章内容为：</p>
+<ul>
+<li><a href="#1">Daemon socket Options</a></li>
+<li><a href="#2">Daemon execdriver Options</a></li>
+<li><a href="#3">Daemon DNS Options</a></li>
+<li><a href="#4">Insecure Registries</a></li>
+<li><a href="#5">Legacy Registries</a></li>
+</ul>
+<h2 id="1">Daemon socket Options</h2>
+
+<p><code>Docker daemon</code>可以通过三种类型的socket监听Docker Remote API请求，分别是<code>unix</code>，<code>tcp</code>和<code>fd</code>。<br>默认情况下，<code>Docker</code>会在<code>/var/run/docker.sock</code>下创建一个<code>unix</code>套接字，这需要<code>root</code>权限或者将当前用户加入了<code>group docker</code>。<br>如果需要远程的访问<code>Docker daemon</code>，就需要使用<code>TCP</code>套接字，但需要注意的是，默认情况下，对<code>Docker daemon</code>的访问是非加密的和没有认证的。为了保证安全，需要需要使用经过加密的<code>HTTPS</code>套接字或者使用加密的安全web代理(<code>secure web proxy</code>)。<br>你可以使用<code>-H tcp://0.0.0.0:2375</code>以在所有的网络端口上监听2375接口，或者使用类似<code>-H tcp://192.168.59.63:2375</code>在一个特定的网络接口上监听2375端口。2375接口使用非加密的连接，2376使用加密的连接。<br><strong>Note:</strong>如果你要使用加密的<code>HTTPS</code>连接，记住只支持TLS1.0和更高的版本，不支持SSLv3和以下的版本。<br>可以使用多个<code>-H</code>标签来是<code>Docker daemon</code>监听多个套接字，下面的例子监听一个<code>unix socket</code>和两个<code>tcp socket</code>：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker daemon -H unix:///var/run/docker.sock -H tcp://<span class="number">192.168</span>.<span class="number">59.106</span> -H tcp://<span class="number">10.10</span>.<span class="number">10.2</span></span><br></pre></td></tr></table></figure></p>
+<p><code>docker client</code>会通过<code>DOCKET_HOST</code>环境变量来设置自己的<code>-H</code>标签值。</p>
+<p><strong>daemon存储驱动器选项</strong><br><code>Docker daemon</code>支持多种分层的存储驱动器，包括<code>aufs</code>，<code>devicemapper</code>，<code>btrfs</code>，<code>zfs</code>和<code>overlay</code>。<br><code>aufs</code>是最先被支持的一个，但是它几乎不可能被加入<code>Linux</code>内核。<code>aufs</code>是唯一一个支持容器间共享可执行二进制文件的存储驱动器。</p>
+<h2 id="2">Docker ecexdriver options</h2>
+
+<p><code>Docker</code>执行驱动器选项。目前<code>Docker</code>默认的执行驱动器实现是<code>libcontainer</code>，<code>Docker</code>通过它与Linux内核的<code>namespace</code>，<code>cgroups</code>和<code>SELinux</code>打交道。<br>你可以通过<code>--exec-opt</code>标识来配置<code>libcontainer</code>(native execdriver)，这些选项都以<code>native</code>作为前缀。</p>
+<h2 id="3">Daemon DNS Options</h2>
+
+<p>顾名思义，这个标识用来给所有的容器配置DNS服务器，命令格式为：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker daemon --dns <span class="number">8.8</span>.<span class="number">8.8</span></span><br></pre></td></tr></table></figure></p>
+<p>也可以通过<code>docker daemon --dns-search example.com</code>为容器设置<code>DNS search domain</code>。</p>
+<h2 id="4">Insecure Registries</h2>
+
+<p>不安全的镜像服务。<br><strong>Note:</strong>关于<code>Docker</code>镜像服务，有几个概念：<br>首先是<code>Registry</code>，它指一个提供Docker镜像服务的站点，我们翻译为<code>服务</code>。<br><code>Repository</code>:它指一个提供某种镜像的仓库，如“chy/ubuntu”，它下面包括了各个版本的ubuntu镜像，如ubuntu12.04 ubuntu14.04等。<br>它们之间的关系为：一个<code>Registry</code>包括多个<code>Repository</code>，一个<code>Repository</code>又包括多个镜像。</p>
+<p><code>Docker</code>可以使用安全的或不安全的<strong>私有</strong>镜像Registry，所谓安全指镜像Registry使用了<code>TLS</code>和CA证书。不安全的镜像Registry指或者没有使用<code>TLS</code>或者其证书<code>Docker daemon</code>无法识别。<br>默认情况下，<code>Docker</code>要求除本地镜像Registry以外的所有镜像服务都要是安全的，否则无法进行通信。要与不安全的镜像Registry进行通信，需要在启动<code>Docker daemon</code>时使用<code>--insecure-registry</code>标识。有如下两种方式：<br><code>--insecure-registry myregistry:5000</code>告诉<code>Docker daemon</code>myregistry:5000是不安全的；<code>--insecure-registry 10.1.0.0/16</code>告诉<code>Docker daemon</code>子网中的所有镜像Registry都是不安全的。<br>如果一个不安全的镜像Registry没有被标记为不安全，那么<code>docker pull</code>，<code>docker push</code>，<code>docker search</code>命令会返回一个错误告诉用户或者使用安全的镜像Registry或者将其标记为不安全。<br>本地的镜像Registry默认被标记为不安全的，但这可能在未来的版本中改变。<br>使用了<code>--insecure-registry</code>标识，意味着与其通信是不加密的，这在运行一个本地的镜像Registry时很有用(省去一些额外开销)。但最好只用来进行测试，因为可能会产生安全问题。</p>
+<h2 id="5">Legacy Registry</h2>
+
+<p>旧版本的Registry，也就是使用<code>V1</code>协议的Registry，目前比较新的协议是V2。<code>--disable-legacy-registry</code>标识指定<code>Docker daemon</code>只能和使用了V2协议的Registry进行通信。这样，当执行<code>pull</code>，<code>push</code>，<code>login</code>命令的时候将不会尝试和V1 Registry通信，但<code>search</code>命令依然可以在V1 Registry上使用。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/docker/">docker</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Docker-Commands/">Docker Commands</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/11/21/Docker命令解读-二/" data-title="Docker命令解读(二) | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/11/22/Docker命令解读-三/" title="Docker命令解读(三)">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Docker命令解读(三)</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/11/19/Docker命令解读-一/"  title="Docker命令解读(一)">
+ <strong>NEXT:</strong><br/> 
+ <span>Docker命令解读(一)
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">Daemon socket Options</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">Docker ecexdriver options</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">Daemon DNS Options</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4"><span class="toc-number">4.</span> <span class="toc-text">Insecure Registries</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5"><span class="toc-number">5.</span> <span class="toc-text">Legacy Registry</span></a></li></ol>
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,385 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Docker之四种网络模式 | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="Docker网络有四种模式,分别是:
+
+host模式
+container模式
+none模式
+bridge模式
+用户自定义
+
+下面分别介绍:">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/11/11/Docker之四种网络模式/" title="Docker之四种网络模式" itemprop="url">Docker之四种网络模式</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-11-11T07:19:20.000Z" itemprop="datePublished">2015-11-11</time>
+    更新日期:<time datetime="2015-11-30T02:58:02.000Z" itemprop="dateModified">2015-11-30</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		<ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">Host模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">Container模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">none模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4"><span class="toc-number">4.</span> <span class="toc-text">bridge模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5"><span class="toc-number">5.</span> <span class="toc-text">用户自定义网络</span></a></li></ol>
+		</div>
+		
+		<p>Docker网络有四种模式,分别是:</p>
+<ul>
+<li><a href="#1">host模式</a></li>
+<li><a href="#2">container模式</a></li>
+<li><a href="#3">none模式</a></li>
+<li><a href="#4">bridge模式</a></li>
+<li><a href="#5">用户自定义</a></li>
+</ul>
+<p>下面分别介绍:<br><a id="more"></a></p>
+<h3 id="1">Host模式</h3>
+
+<p>格式:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --name myubuntu --net=host ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>众所周知，Docker使用了Linux的Namespaces技术来进行资源隔离，如<code>PID Namespace</code>隔离进程，<code>Mount Namespace</code>隔离文件系统，<code>Network Namespace</code>隔离网络等。一个<code>Network Namespace</code>提供了一份独立的网络环境，包括网卡、路由、Iptable规则等都与其他的Network Namespace隔离。一个Docker容器一般会分配一个独立的Network Namespace。但如果启动容器的时候使用host模式，那么这个容器将不会获得一个独立的Network Namespace，而是和宿主机共用一个Network Namespace。容器将不会虚拟出自己的网卡，配置自己的IP等，而是使用宿主机的IP和端口。<br>例如,如果宿主机的Ip地址是<code>10.203.2.243</code>,使用host模式新建一个容器,加入容器中运行的是Nginx应用,绑定在容器的80端口上,外部主机可以直接通过<code>10.203.2.243:80</code>访问容器中的web应用,而使用<code>docker run</code>运行容器时不需要指定-p参数.即在使用host模式时,容器中的应用都直接绑定在宿主机的端口上,没有NAT转换.但容器的其他如文件系统等还是隔离的.<br>这种模式下,在容器中运行<code>ifconfig</code>命令会显示宿主机eth0的信息.</p>
+<h3 id="2">Container模式</h3>
+
+<p>格式:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --name myubuntu --net=container:NAME_OR_ID ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>Container模式,顾名思义,就是在运行容器时通过<code>--net</code>指定另一个已经在运行的有单独<code>Network Namespace</code>的容器,然后与这个容器共享一个<code>Network Namespace</code>.在这种情况下,新建的容器没有自己的网卡,也不会给它分配IP,而是两个容器共享IP和端口空间.<br>此时,在当前容器中执行<code>ifconfig</code>命令会显示container指定的容器的eth0信息.</p>
+<h3 id="3">none模式</h3>
+
+<p>格式:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --name myubuntu --net=none ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>none模式下,Docker会为新创建的容器分配自己的<code>Network Namespace</code>,但不会为这个容器的网络进行任何配置,容器也没有自己的IP网卡等信息,需我们为其配置.</p>
+<h3 id="4">bridge模式</h3>
+
+<p>这是Docker的默认模式.<br>当Docker服务启动时,Docker会在宿主机上建立一个虚拟网桥<code>docker0</code>,宿主机上启动的容器会连接到这个虚拟网桥上.<br>Docker会在一个可用网段(一般是172.17.0.0/16这个网段)中为<code>docker0</code>分配一个IP地址(一般是172.17.0.1),而每创建一个使用bridge网络模式的新的容器,Docker就会在上面的网段中选择一个尚未分配的IP地址分配给容器的eth0网卡.<br>实际的网络配置过程是这样的:<br>Docker在主机上创建一对<code>veth pair</code>虚拟网卡设备,veth设备总是成对出现,它的工作模式类似于管道,数据从一头进去,从另一头出来.Docker将这对虚拟网卡的一段连接到容器的eth0端口上,另一端与<code>docker0</code>网桥相连.这样,docker容器就能与宿主机通信了.<br>在给docker容器分配IP时,默认将docker0的地址作为容器的网关.</p>
+<h3 id="5">用户自定义网络</h3>
+
+<p>用户可以通过Docker网络驱动器或其他的网络驱动器自定义网络。你可以将许多容器连接到同一个网络上，一旦连接到了自定义的网络上，容器之间就可以通过对方的IP地址和主机名来进行通信了。<br>如果容器连接到了用户自定义的网络上，容器的<code>/etc/hosts</code>文件会加入在同一个网络中的其他所有容器的IP地址。<br><strong>Note:</strong>由于容器有可能随时改变<code>/etc/hosts</code>文件，容器中的程序可能会读取到不完整的甚至空的<code>/etc/hosts</code>文件。通常重新读取可以解决这个问题。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/docker/">docker</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Docker-Network/">Docker Network</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/11/11/Docker之四种网络模式/" data-title="Docker之四种网络模式 | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/11/19/Docker命令解读-一/" title="Docker命令解读(一)">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Docker命令解读(一)</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/11/10/Docker之容器互联/"  title="Docker之容器互联">
+ <strong>NEXT:</strong><br/> 
+ <span>Docker之容器互联
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">Host模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">Container模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">none模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4"><span class="toc-number">4.</span> <span class="toc-text">bridge模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5"><span class="toc-number">5.</span> <span class="toc-text">用户自定义网络</span></a></li></ol>
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>

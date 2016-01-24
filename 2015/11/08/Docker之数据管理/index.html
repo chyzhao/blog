@@ -1,0 +1,374 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Docker之数据管理 | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="数据管理是Docker中重要的一个环节,主要分为数据卷和数据卷容器两种方式,整理一下,加深记忆.">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/11/08/Docker之数据管理/" title="Docker之数据管理" itemprop="url">Docker之数据管理</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-11-08T06:55:10.000Z" itemprop="datePublished">2015-11-08</time>
+    更新日期:<time datetime="2015-11-30T02:58:43.000Z" itemprop="dateModified">2015-11-30</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#数据卷"><span class="toc-number">1.</span> <span class="toc-text">数据卷</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#创建一个数据卷"><span class="toc-number">1.0.1.</span> <span class="toc-text">创建一个数据卷</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#挂载宿主机目录作为卷"><span class="toc-number">1.0.2.</span> <span class="toc-text">挂载宿主机目录作为卷</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#挂载一个宿主机文件作为卷"><span class="toc-number">1.0.3.</span> <span class="toc-text">挂载一个宿主机文件作为卷</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数据卷容器"><span class="toc-number">2.</span> <span class="toc-text">数据卷容器</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#备份数据"><span class="toc-number">2.0.1.</span> <span class="toc-text">备份数据</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#迁移和恢复数据"><span class="toc-number">2.0.2.</span> <span class="toc-text">迁移和恢复数据</span></a></li></ol></li></ol></li></ol>
+		</div>
+		
+		<p>数据管理是Docker中重要的一个环节,主要分为数据卷和数据卷容器两种方式,整理一下,加深记忆.<br><a id="more"></a><br>Docker管理数据主要有数据卷和数据卷容器两种方式:</p>
+<h2 id="数据卷">数据卷</h2><p>数据卷是可供一个或多个容器使用的特殊目录,它绕过UFS,提供许多有用的特性:</p>
+<ul>
+<li>数据卷可以在容器间共享和重用</li>
+<li>对数据卷的修改会马上生效</li>
+<li>对数据卷的更新不会影响镜像</li>
+<li>卷会一直存在,直到没有容器使用</li>
+</ul>
+<h4 id="创建一个数据卷">创建一个数据卷</h4><p>在用docker run命令的时候,可以使用-v标记创建一个卷并挂载到容器里,在一次run中多次使用可以挂载多个卷:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run <span class="operator">-d</span> -P -v /webapp --name myubuntu ubuntu <span class="built_in">echo</span> hello//创建一个名为myubuntu容器并挂载一个数据卷到容器的/webapp目录</span><br></pre></td></tr></table></figure></p>
+<p>也可以使用Dockerfile的VOLUME命令添加一个或多个卷到由该镜像创建的任何容器.VOLUME命令请参考:<a href="http://chyzhao.github.io/2015/11/07/Dockerfile-%E6%8C%87%E4%BB%A4/" target="_blank" rel="external">VOLUME</a><br>需要注意的是,数据卷的生命周期独立于任何容器,Docker不会在删除容器后自动删除数据卷,如果要在删除容器时同时删除数据卷,可以在对最后一个引用卷的容器进行docker rm命令时指定-v标记:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker rm xxx -v</span><br></pre></td></tr></table></figure></p>
+<h4 id="挂载宿主机目录作为卷">挂载宿主机目录作为卷</h4><p>使用-v标记也可以将宿主机的一个目录作为卷挂载到容器中的一个目录上:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -i -t -v /home/chy/docker/data:/data --name myubuntu ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>挂载的默认权限是读写,可以通过使用:ro标记为只读:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -i -t -v /home/chy/docker/data:/data:ro --name myubuntu ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>注:Dockerfile中不支持这种用法.</p>
+<h4 id="挂载一个宿主机文件作为卷">挂载一个宿主机文件作为卷</h4><p>同样可以挂载宿主机的一个文件作为卷:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it -v /home/chy/docker/file:/file --name myubuntu ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>file是我创建的文件,里面只有一个字符串”zhao”<br>接下来查看容器中的fle文件可以看到这个字符串,在容器中向这个文件写入数据也可以在宿主机中看到.</p>
+<h2 id="数据卷容器">数据卷容器</h2><p>数据卷容器是一个专门提供数据的容器,它在docker run命令中用-v标记(或在Dockerfile中用VOLUME命令)添加了卷,它并不需要保持在运行状态,所以一般指定-d标记.<br>创建了这个卷之后,在其他的卷中就可以使用–volumes-from标记加载卷容器中的卷:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker run <span class="operator">-d</span> -v /data --name data ubuntu <span class="built_in">echo</span> this is a data container //创建一个数据卷容器</span><br><span class="line">docker run -it --volumes-from data --name app ubuntu /bin/bash //另一个容器,加载了data容器中的卷</span><br></pre></td></tr></table></figure></p>
+<h4 id="备份数据">备份数据</h4><p>下面介绍下如何将容器数据卷中的数据备份到宿主机:<br>首先我们创建一个数据容器:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run <span class="operator">-d</span> -v /<span class="built_in">test</span> --name testdata ubuntu <span class="built_in">echo</span> this is a data container</span><br></pre></td></tr></table></figure></p>
+<p>这行命令运行了一个名为testdata的容器,并用-v标志设置了一个名为/test的卷<br>然后我们再创建一个容器挂载刚才的数据容器中的卷:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -i -t --name webtest --volumes-from testdata ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>我们启动了一个叫webtest的容器,通过–volumes-from标志挂载testdata中的卷,并打开/bin/bash<br>启动bash后进行如下操作:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">root@a69ee81bf3f5:/<span class="comment"># ls</span></span><br><span class="line">bin  boot  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run  sbin  srv  sys  <span class="built_in">test</span>  tmp  usr  var</span><br><span class="line">root@a69ee81bf3f5:/<span class="comment"># cd test/</span></span><br><span class="line">root@a69ee81bf3f5:/<span class="built_in">test</span><span class="comment"># touch testfilezhao</span></span><br><span class="line">root@a69ee81bf3f5:/<span class="built_in">test</span><span class="comment"># ls</span></span><br><span class="line">testfilezhao</span><br><span class="line">root@a69ee81bf3f5:/<span class="built_in">test</span><span class="comment"># cd ..</span></span><br><span class="line">root@a69ee81bf3f5:/<span class="comment"># exit</span></span><br></pre></td></tr></table></figure></p>
+<p>即进入/test文件夹并在其中创建了一个文件,这个文件就是一会儿我们要备份的内容.<br>接着我们再启动一个荣起来备份文件:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --volumes-from testdata -v $(<span class="built_in">pwd</span>):/backup ubuntu tar cvf /backup/backup.tar /<span class="built_in">test</span></span><br></pre></td></tr></table></figure></p>
+<p>这个容器使用-v标志将宿主机的当前文件夹挂在到容器中的/backup文件夹下而且使用–volumes-from标志挂载了testdata容器中的/test卷,意味着它可以访问这个卷中的内容,这个容器使用tar命令将/test文件夹打包成.tar文件并保存在容器的/backup文件夹下.执行成功后我们就可以在宿主机的当前目录下看到一个backup.tar文件,使用如下命令解压,就可以看到我们早前创建的testfile文件.<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">chy@chy-station:~/Templates/docker$ tar xvf backup.tar</span><br><span class="line"><span class="built_in">test</span>/</span><br><span class="line"><span class="built_in">test</span>/testfilezhao</span><br><span class="line">chy@chy-station:~/Templates/docker$ ls</span><br><span class="line">backup.tar  <span class="built_in">test</span></span><br><span class="line">chy@chy-station:~/Templates/docker$ <span class="built_in">cd</span> <span class="built_in">test</span>/</span><br><span class="line">chy@chy-station:~/Templates/docker/<span class="built_in">test</span>$ ls</span><br><span class="line">testfilezhao</span><br></pre></td></tr></table></figure></p>
+<h4 id="迁移和恢复数据">迁移和恢复数据</h4><p>下面将备份的backup.tar文件复制到另一台宿主机后解压到一个目录<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">chy@chy-station:~/Templates/docker$ tar xvf backup.tar </span><br><span class="line"><span class="built_in">test</span>/</span><br><span class="line"><span class="built_in">test</span>/testfilezhao</span><br></pre></td></tr></table></figure></p>
+<p>接下来创建一个新的容器,并将数据导入新的容器:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -t -i -v /home/chy/Templates/docker/<span class="built_in">test</span>:/<span class="built_in">test</span> --name testweb2 ubuntu bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>查看/test目录可以看到testfilezhao文件.<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@bac3f7ff9a50:/<span class="comment"># cd test/</span></span><br><span class="line">root@bac3f7ff9a50:/<span class="built_in">test</span><span class="comment"># ls</span></span><br><span class="line">testfilezhao</span><br><span class="line">root@bac3f7ff9a50:/<span class="built_in">test</span><span class="comment">#</span></span><br></pre></td></tr></table></figure></p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/docker/">docker</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Docker-Others/">Docker Others</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/11/08/Docker之数据管理/" data-title="Docker之数据管理 | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/11/09/Go-chan之优先策略/" title="Go chan之优先策略">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Go chan之优先策略</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/11/07/Go-net包之基础类型/"  title="Go net包之基础类型">
+ <strong>NEXT:</strong><br/> 
+ <span>Go net包之基础类型
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#数据卷"><span class="toc-number">1.</span> <span class="toc-text">数据卷</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#创建一个数据卷"><span class="toc-number">1.0.1.</span> <span class="toc-text">创建一个数据卷</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#挂载宿主机目录作为卷"><span class="toc-number">1.0.2.</span> <span class="toc-text">挂载宿主机目录作为卷</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#挂载一个宿主机文件作为卷"><span class="toc-number">1.0.3.</span> <span class="toc-text">挂载一个宿主机文件作为卷</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#数据卷容器"><span class="toc-number">2.</span> <span class="toc-text">数据卷容器</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#备份数据"><span class="toc-number">2.0.1.</span> <span class="toc-text">备份数据</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#迁移和恢复数据"><span class="toc-number">2.0.2.</span> <span class="toc-text">迁移和恢复数据</span></a></li></ol></li></ol></li></ol>
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>

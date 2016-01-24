@@ -1,0 +1,383 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Docker网络详解(三)——默认网络 | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="在Docker中，网络是很重要的部分，之前写过一篇有关Docker的几种网络模式的文章：Docker之四种网络模式，接下来的几篇文章将详细讲解Docker网络的原理和配置。
+这篇文章介绍Docker默认bridge网咯的配置，这部分我也没怎么看懂，不喜勿喷。">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/12/01/Docker网络详解-三/" title="Docker网络详解(三)——默认网络" itemprop="url">Docker网络详解(三)——默认网络</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-12-01T01:32:08.000Z" itemprop="datePublished">2015-12-01</time>
+    更新日期:<time datetime="2015-12-04T08:12:55.000Z" itemprop="dateModified">2015-12-04</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">自定义网桥</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">配置容器的DNS</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">配置docker0网桥</span></a></li></ol>
+		</div>
+		
+		<p>在Docker中，网络是很重要的部分，之前写过一篇有关Docker的几种网络模式的文章：<a href="/2015/11/11/Docker之四种网络模式">Docker之四种网络模式</a>，接下来的几篇文章将详细讲解Docker网络的原理和配置。</p>
+<p>这篇文章介绍Docker默认bridge网咯的配置，这部分我也没怎么看懂，不喜勿喷。<br><a id="more"></a><br>目录：</p>
+<ul>
+<li><a href="#1">自定义网桥</a></li>
+<li><a href="#2">配置容器的DNS</a></li>
+<li><a href="#3">配置docker0网桥</a></li>
+</ul>
+<h2 id="1">自定义网桥</h2>
+
+<p>众所周知，Docker在安装时默认建立了docker0网桥，默认情况下，所有以birdge网络模式启动的容器都通过veth pair设备连接到docker0网桥上。</p>
+<p>除了使用默认创建的docker0网桥，在启动<code>docker daemon</code>时，我们可以指定自己创建的网桥，下面先来看看怎么自定义网桥：</p>
+<p>在Linux中创建网桥需要<code>brctl</code>命令，如果没有安装请使用<code>sudo apt-get install bridge-utils</code>安装。接下来就可以创建自定义的网桥了：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ sudo brctl addbr bridge0  <span class="comment">#创建网桥，命名为 bridge0</span></span><br><span class="line">$ sudo ip addr add <span class="number">192.168</span>.<span class="number">5.1</span>/<span class="number">24</span> dev bridge0  <span class="comment">#分配IP地址</span></span><br><span class="line">$ sudo ip link <span class="built_in">set</span> dev bridge0 up  <span class="comment">#启动网桥</span></span><br></pre></td></tr></table></figure>
+<p>之后，就可以在启动<code>docker daemon</code>时指定我们自己的网桥了：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ sudo service docker stop  <span class="comment">#停止docker daemon</span></span><br><span class="line">$ sudo ip link <span class="built_in">set</span> dev docker0 down  <span class="comment">#停止docker0网桥</span></span><br><span class="line">$ sudo brctl delbr docker0  <span class="comment">#删除docker0网桥</span></span><br><span class="line"></span><br><span class="line">$ docker daemon --bridge=bridge0</span><br></pre></td></tr></table></figure>
+<h2 id="2">配置容器的DNS</h2>
+
+<p>这部分的内容有关容器中三个重要的文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/etc/hostname</span><br><span class="line">/etc/hosts</span><br><span class="line">/etc/resolv.conf</span><br></pre></td></tr></table></figure>
+<p>其中<code>hostname</code>文件的内容可以在<code>docker run</code>时通过<code>-h</code>，<code>--hostname</code>指定，如果没有指定，默认为容器的短ID。这个hostname对外是不可见的，即不会出现在<code>docker ps</code>中也不会出现在任何其他容器的<code>hosts</code>文件中。</p>
+<p><code>resolv.conf</code>是与DNS密切相关的文件。与其相关的命令标识有:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">--dns=IP_ADDRESS  <span class="comment">#在`resolv.conf`文件添加一个`server`行，当容器中的进程需要解析一个没有在hosts文件中的hostname值时，就把它发给IP_ADDRESS指定的地址解析它。</span></span><br><span class="line">--dns-search=DOAMIN  <span class="comment">#</span></span><br><span class="line">--dns-opt=OPTION  <span class="comment">#</span></span><br></pre></td></tr></table></figure>
+<p>需要注意，不要手动过编辑<code>resolv.conf</code>文件。</p>
+<h2 id="3">配置docker0网桥</h2>
+
+<p>默认情况下，Docker在创建<code>docker0</code>之后会配置它，给它分配IP，掩码，网络范围，并指定MTU(最大传输单元)。这些内容也可以由用户手动配置。</p>
+<p>配置的命令标识如下：</p>
+<ul>
+<li><code>--bip=CIDR</code> 给<code>docker0</code>分配特定的IP地址，并设置子网掩码。格式为：<code>--bip=192.168.1.5/24</code></li>
+<li><code>--fixed-cidr=CIDR</code>:限制<code>docker0</code>分配给容器的IP的范围。格式为：<code>--fixed-cidr=192.168.1.0/25</code>,指定的范围必须是IPV4地址，且必须是docker0所在网络范围内的一个子网，或是由<code>--bridge</code>指定的网桥的IP所在网络范围内的一个子网。此后，为容器分配IP时就会从这个范围内选择一个可用的IP地址。</li>
+<li><code>--mtu=BYTES</code>：覆盖<code>docker0</code>默认的最大传输单元。</li>
+</ul>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/docker/">docker</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Docker-Network/">Docker Network</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/12/01/Docker网络详解-三/" data-title="Docker网络详解(三)——默认网络 | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/12/02/Docker三剑客之Machine-一/" title="Docker三剑客之Machine(一)——Machine实例">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Docker三剑客之Machine(一)——Machine实例</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/11/29/Docker网络详解-二/"  title="Docker网络详解(二)——网络管理命令">
+ <strong>NEXT:</strong><br/> 
+ <span>Docker网络详解(二)——网络管理命令
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">自定义网桥</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">配置容器的DNS</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">配置docker0网桥</span></a></li></ol>
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,439 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Docker三剑客之Compose(二)——Compose命令详解 | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="Docker Compose是一个编排多容器分布式部署的工具，提供命令集管理容器化应用的完整开发周期，包括服务构建，启动和停止。">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/12/04/Docker三剑客之Compose-二/" title="Docker三剑客之Compose(二)——Compose命令详解" itemprop="url">Docker三剑客之Compose(二)——Compose命令详解</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-12-04T08:01:34.000Z" itemprop="datePublished">2015-12-04</time>
+    更新日期:<time datetime="2015-12-04T13:51:42.000Z" itemprop="dateModified">2015-12-04</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		<ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">build</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">kill</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">logs</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4"><span class="toc-number">4.</span> <span class="toc-text">pause & unpause</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5"><span class="toc-number">5.</span> <span class="toc-text">port</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6"><span class="toc-number">6.</span> <span class="toc-text">ps</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7"><span class="toc-number">7.</span> <span class="toc-text">pull</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8"><span class="toc-number">8.</span> <span class="toc-text">restart</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9"><span class="toc-number">9.</span> <span class="toc-text">rm</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10"><span class="toc-number">10.</span> <span class="toc-text">run</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11"><span class="toc-number">11.</span> <span class="toc-text">scale</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12"><span class="toc-number">12.</span> <span class="toc-text">start & stop</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#13"><span class="toc-number">13.</span> <span class="toc-text">up</span></a></li></ol>
+		</div>
+		
+		<p><code>Docker Compose</code>是一个编排多容器分布式部署的工具，提供命令集管理容器化应用的完整开发周期，包括服务构建，启动和停止。</p>
+<a id="more"></a>
+<p>首先看一下<code>Compose</code>命令的格式：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Usage:</span><br><span class="line">  docker-compose [<span class="operator">-f</span>=&lt;arg&gt;...] [options] [COMMAND] [ARGS...]</span><br></pre></td></tr></table></figure></p>
+<p>其中options有如下选项：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Options:</span><br><span class="line">  <span class="operator">-f</span>, --file FILE           Specify an alternate compose file (default: docker-compose.yml)</span><br><span class="line">  -p, --project-name NAME   Specify an alternate project name (default: directory name)</span><br><span class="line">  --x-networking            (EXPERIMENTAL) Use new Docker networking functionality.</span><br><span class="line">                            Requires Docker <span class="number">1.9</span> or later.</span><br><span class="line">  --x-network-driver DRIVER (EXPERIMENTAL) Specify a network driver (default: <span class="string">"bridge"</span>).</span><br><span class="line">                            Requires Docker <span class="number">1.9</span> or later.</span><br><span class="line">  --verbose                 Show more output</span><br><span class="line">  -v, --version             Print version and <span class="built_in">exit</span></span><br></pre></td></tr></table></figure></p>
+<p>首先运行<code>docker-compose</code>命令需要指定服务(service)名称，可以同时指定多个service，也可以不指定，当不指定service名称时，默认对配置中的所有service执行命令。</p>
+<p>其中<code>-f</code>标识用于指定Compose的配置文件，可以指定多个，当没有使用<code>-f</code>标识时，默认在项目跟目录及其子目录下寻找<code>docker-compose.yml</code>和<code>docker-compose.override.yml</code>文件，至少需要存在<code>docker-compose.yml</code>文件。</p>
+<p>当指定了多个文件时(包括没指定<code>-f</code>但同时存在<code>docker-compose.yml</code>和<code>docker-compose.override.yml</code>文件)，Compose会将多个文件合并成一个配置文件，合并的结果与指定文件的顺序有关。合并有两种操作，或者添加，或者覆盖。具体的合并规则以后会单独用一篇文章介绍。</p>
+<p><code>-p</code>标识用于给项目指定一个名称，如过没有指定，默认使用项目根目录的名称作为项目名称。<br><code>-v</code>显示版本号</p>
+<p>Compose的Commands有如下几个，一一介绍：</p>
+<ul>
+<li><a href="#1">build</a></li>
+<li><a href="#2">kill</a></li>
+<li><a href="#3">logs</a></li>
+<li><a href="#4">pause &amp; unpause</a></li>
+<li><a href="#5">port</a></li>
+<li><a href="#6">ps</a></li>
+<li><a href="#7">pull</a></li>
+<li><a href="#8">restart</a></li>
+<li><a href="#9">rm</a></li>
+<li><a href="#10">run</a></li>
+<li><a href="#11">scale</a></li>
+<li><a href="#12">start &amp; stop</a></li>
+<li><a href="#13">up</a></li>
+</ul>
+<h3 id="1">build</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Usage: build [options] [SERVICE...]</span><br><span class="line"></span><br><span class="line">Options:</span><br><span class="line">    --force-rm  Always remove intermediate containers.</span><br><span class="line">    --no-cache  Do not use cache when building the image.</span><br><span class="line">    --pull      Always attempt to pull a newer version of the image.</span><br></pre></td></tr></table></figure>
+<p><code>docker-compose build</code>命令用来创建或重新创建服务使用的镜像，后面指定的是服务的名称，创建之后的镜像名为<code>project_service</code>,即项目名后跟服务名。比如项目名称为composeset，其中的一个服务名称为web，则<code>docker-compose build web</code>创建的镜像的名称为composeset_web。</p>
+<p>和<code>docker build</code>一样，执行此命令也需要<code>Dockerfile</code>文件。当修改了Dockerfile文件或它的上下文之后，可以运行<code>docker-compose build</code>重新创建镜像，此时无需指定服务名称。</p>
+<h3 id="2">kill</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Usage: <span class="built_in">kill</span> [options] [SERVICE...]</span><br><span class="line"></span><br><span class="line">Options:</span><br><span class="line"><span class="operator">-s</span> SIGNAL         SIGNAL to send to the container. Default signal is SIGKILL.</span><br></pre></td></tr></table></figure>
+<p><code>docker-compose kill</code>命令用于通过向容器发送<code>SIGKILL</code>信号强行停止服务。<br><code>-s</code>标识用于覆盖默认发送的信号</p>
+<h3 id="3">logs</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Usage: logs [options] [SERVICE...]</span><br><span class="line"></span><br><span class="line">Options:</span><br><span class="line">--no-color  Produce monochrome output.</span><br></pre></td></tr></table></figure>
+<p><code>docker-compose logs</code>命令用于展示service的日志<br><code>--no-color</code>标识使日志显示为单色</p>
+<h3 id="4">pause &amp; unpause</h3>
+
+<p><code>docker-compose pause</code>暂停服务；<br><code>docker-compose unpause</code>恢复被暂停的服务；</p>
+<h3 id="5">port</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Usage: port [options] SERVICE PRIVATE_PORT</span><br><span class="line"></span><br><span class="line">Options:</span><br><span class="line">--protocol=proto  tcp or udp [default:  tcp]</span><br><span class="line">--index=index     index of the container <span class="keyword">if</span> there are multiple</span><br><span class="line">                  instances of a service [default: <span class="number">1</span>]</span><br></pre></td></tr></table></figure>
+<p><code>docker-conpose port</code>命令用于查看服务中的端口被映射到了宿主机的哪个端口上，使用这条命令时必须通知指定服务名称和内部端口号，完整命令示例：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ docker-compose port web <span class="number">5000</span>  <span class="comment">#查看web服务中5000端口被映射到宿主机的哪个端口上</span></span><br><span class="line"></span><br><span class="line"><span class="number">0.0</span>.<span class="number">0.0</span>:<span class="number">5000</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="6">ps</h3>
+
+<p><code>docker-compose ps</code>用于显示当前项目下的容器。注意，执行此命令时必须<code>cd</code>到项目的根目录下，否则提示如下错误：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ERROR: </span><br><span class="line">        Can<span class="string">'t find a suitable configuration file in this directory or any parent. Are you in the right directory?</span><br><span class="line"></span><br><span class="line">        Supported filenames: docker-compose.yml, docker-compose.yaml, fig.yml, fig.yaml</span></span><br></pre></td></tr></table></figure></p>
+<p>与<code>docker ps</code>不同，<code>docker-compose</code>会显示停止后的容器(即状态为<code>Exited</code>的容器)；</p>
+<p><code>docker-compose ps</code>只能查看当前项目的容器，如果要显示本机上所有的容器，请使用<code>docker ps -a</code>。</p>
+<h3 id="7">pull</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Usage: pull [options] [SERVICE...]</span><br><span class="line"></span><br><span class="line">Options:</span><br><span class="line">--ignore-pull-failures  Pull what it can and ignores images with pull failures.</span><br></pre></td></tr></table></figure>
+<p><code>docker-compose pull</code>用于；拉取服务依赖的镜像；</p>
+<h3 id="8">restart</h3>
+
+<p><code>docker-compose restart</code>用于重启某个服务的所有容器，后跟服务名。</p>
+<p>只有正在运行的服务才能重启，停止的服务不能使用<code>restart</code>命令。</p>
+<h3 id="9">rm</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Usage: rm [options] [SERVICE...]</span><br><span class="line"></span><br><span class="line">Options:</span><br><span class="line"><span class="operator">-f</span>, --force   Don<span class="string">'t ask to confirm removal</span><br><span class="line">-v            Remove volumes associated with containers</span></span><br></pre></td></tr></table></figure>
+<p><code>docker-compose rm</code>删除停止的服务(容器)<br><code>-f</code>表示强制删除<br><code>-v</code>标识表示删除与容器相关的卷(volumes)</p>
+<h3 id="10">run</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Usage: run [options] [-p PORT...] [<span class="operator">-e</span> KEY=VAL...] SERVICE [COMMAND] [ARGS...]</span><br><span class="line"></span><br><span class="line">Options:</span><br><span class="line">    --allow-insecure-ssl  Deprecated - no effect.</span><br><span class="line">    <span class="operator">-d</span>                    Detached mode: Run container <span class="keyword">in</span> the background, <span class="built_in">print</span></span><br><span class="line">                          new container name.</span><br><span class="line">    --name NAME           Assign a name to the container</span><br><span class="line">    --entrypoint CMD      Override the entrypoint of the image.</span><br><span class="line">    <span class="operator">-e</span> KEY=VAL            Set an environment variable (can be used multiple <span class="built_in">times</span>)</span><br><span class="line">    -u, --user=<span class="string">""</span>         Run as specified username or uid</span><br><span class="line">    --no-deps             Don<span class="string">'t start linked services.</span><br><span class="line">    --rm                  Remove container after run. Ignored in detached mode.</span><br><span class="line">    -p, --publish=[]      Publish a container'</span>s port(s) to the host</span><br><span class="line">    --service-ports       Run <span class="built_in">command</span> with the service<span class="string">'s ports enabled and mapped</span><br><span class="line">                          to the host.</span><br><span class="line">    -T                    Disable pseudo-tty allocation. By default `docker-compose run`</span><br><span class="line">                          allocates a TTY.</span></span><br></pre></td></tr></table></figure>
+<p><code>docker-compose run</code>命令用于在服务中运行一个一次性的命令。使用这个命令会新建一个容器，其配置和service的配置一样，也就是说新建的容器和service启动的容器有相同的volumes，links等。仅管如此，还是有两点不一样：</p>
+<ul>
+<li><code>run</code>指定的命令会覆盖service配置中指定的命令</li>
+<li><p><code>run</code>命令启动的容器不会创建任何在service配置中指定的端口，这避免了端口的冲突。如果你确实想创建端口并映射到宿主机上，可以使用<code>--service-ports</code>，例如：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker-compose run --service-ports web python manage.py shell</span><br></pre></td></tr></table></figure>
+<p>  此外，端口的映射也可以改变，通过<code>-p</code>(<code>--publish</code>)标识。例如：</p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker-compose run <span class="operator">-d</span> -p <span class="number">7001</span>:<span class="number">8000</span> web python manage.py runserver <span class="number">0.0</span>.<span class="number">0.0</span>:<span class="number">8000</span></span><br></pre></td></tr></table></figure>
+<p>  上面的命令创建一个新的容器，其配置与web service一样，且将其8000端口映射到宿主机的7001端口上。</p>
+</li>
+</ul>
+<p>使用<code>docker-compose run</code>启动一个容器时，如果service中有<code>--link</code>指定的其他服务没有运行，会先运行这些服务，<code>--link</code>依赖的服务都运行成功后，再执行指定的命令。如果你不想启动这些依赖的容器，可以使用<code>--no-deps</code>标识。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker-compose run --no-deps web python manage.py shell</span><br></pre></td></tr></table></figure></p>
+<p>此外:<br><code>-e</code>用来添加环境变量；<br><code>--rm</code>指定在<code>run</code>命令之后删除容器，如果指定了<code>-d</code>则忽略<code>--rm</code>标识；<br><code>-d</code>指定后台运行；<br><code>--name</code>指定容器的名字；</p>
+<h3 id="11">scale</h3>
+
+<p><code>docker-compose scale</code>指定某一个服务启动的容器的个数，其参数格式为<code>[service=num]</code>，例如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker-compose scale web=<span class="number">2</span> worker=<span class="number">3</span></span><br></pre></td></tr></table></figure></p>
+<p>这条命令可以使某项服务启动多个容器，但当容器有到主机的端口映射时，因为所有容器都指向一个宿主机的端口，所以只能启动一个容器，其他的会失败。</p>
+<h3 id="12">start &amp; stop</h3>
+
+<p><code>docker-compose start</code>命令启动运行某个服务的所有容器；<br><code>docker-compose stop</code>命令停止运行一个服务的所有容器；</p>
+<h3 id="13">up</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">Usage: up [options] [SERVICE...]</span><br><span class="line"></span><br><span class="line">Options:</span><br><span class="line">    --allow-insecure-ssl   Deprecated - no effect.</span><br><span class="line">    <span class="operator">-d</span>                     Detached mode: Run containers <span class="keyword">in</span> the background,</span><br><span class="line">                           <span class="built_in">print</span> new container names.</span><br><span class="line">    --no-color             Produce monochrome output.</span><br><span class="line">    --no-deps              Don<span class="string">'t start linked services.</span><br><span class="line">    --force-recreate       Recreate containers even if their configuration and</span><br><span class="line">                           image haven'</span>t changed. Incompatible with --no-recreate.</span><br><span class="line">    --no-recreate          If containers already exist, don<span class="string">'t recreate them.</span><br><span class="line">                           Incompatible with --force-recreate.</span><br><span class="line">    --no-build             Don'</span>t build an image, even <span class="keyword">if</span> it<span class="string">'s missing</span><br><span class="line">    -t, --timeout TIMEOUT  Use this timeout in seconds for container shutdown</span><br><span class="line">                           when attached or when containers are already</span><br><span class="line">                           running. (default: 10)</span></span><br></pre></td></tr></table></figure>
+<p><code>docker-compose up</code>创建并运行作为服务的容器，并将其输入输出重定向到控制台(attach)，并将所有容器的输出合并到一起。命令退出后，所有的容器都会停止。</p>
+<p>如果<code>--link</code>依赖的容器没有运行则运行依赖的容器；<br><code>-d</code>标识指定容器后台运行；<br>如果已经存在服务的容器，且容器创建后服务的配置有变化，就重新创建容器。如果没有变化，默认不会重新创建容器；<br><code>--force-recreate</code>标识指定即使服务配置没有变化，也重新创建容器；<br><code>--no-recreate</code>标识表示如果服务的容器已经存在，不要重新创建它们；</p>
+<p>s</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/docker/">docker</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Docker-三剑客/">Docker 三剑客</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/12/04/Docker三剑客之Compose-二/" data-title="Docker三剑客之Compose(二)——Compose命令详解 | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/12/05/Docker三剑客之Compose-三/" title="Docker三剑客之Compose(三)——Compose配置文件详解">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Docker三剑客之Compose(三)——Compose配置文件详解</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/12/04/Docker三剑客之Compose-一/"  title="Docker三剑客之Compose(一)——Compose简介及实例">
+ <strong>NEXT:</strong><br/> 
+ <span>Docker三剑客之Compose(一)——Compose简介及实例
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">build</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">kill</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">logs</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4"><span class="toc-number">4.</span> <span class="toc-text">pause & unpause</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5"><span class="toc-number">5.</span> <span class="toc-text">port</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6"><span class="toc-number">6.</span> <span class="toc-text">ps</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7"><span class="toc-number">7.</span> <span class="toc-text">pull</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8"><span class="toc-number">8.</span> <span class="toc-text">restart</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9"><span class="toc-number">9.</span> <span class="toc-text">rm</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10"><span class="toc-number">10.</span> <span class="toc-text">run</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11"><span class="toc-number">11.</span> <span class="toc-text">scale</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12"><span class="toc-number">12.</span> <span class="toc-text">start & stop</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#13"><span class="toc-number">13.</span> <span class="toc-text">up</span></a></li></ol>
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,452 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Docker三剑客之Compose(三)——Compose配置文件详解 | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="Docker Compose是一个编排多容器分布式部署的工具，提供命令集管理容器化应用的完整开发周期，包括服务构建，启动和停止。">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/12/05/Docker三剑客之Compose-三/" title="Docker三剑客之Compose(三)——Compose配置文件详解" itemprop="url">Docker三剑客之Compose(三)——Compose配置文件详解</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-12-05T07:20:17.000Z" itemprop="datePublished">2015-12-05</time>
+    更新日期:<time datetime="2015-12-05T11:42:48.000Z" itemprop="dateModified">2015-12-05</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		<ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">build</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">cap_add & cap_drop</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">command</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4"><span class="toc-number">4.</span> <span class="toc-text">cgroup_parent</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5"><span class="toc-number">5.</span> <span class="toc-text">container_name</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6"><span class="toc-number">6.</span> <span class="toc-text">devices</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7"><span class="toc-number">7.</span> <span class="toc-text">dns & dns_search</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8"><span class="toc-number">8.</span> <span class="toc-text">dockerfile</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9"><span class="toc-number">9.</span> <span class="toc-text">env_file</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10"><span class="toc-number">10.</span> <span class="toc-text">environment</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11"><span class="toc-number">11.</span> <span class="toc-text">expose</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12"><span class="toc-number">12.</span> <span class="toc-text">extends</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#13"><span class="toc-number">13.</span> <span class="toc-text">external_links</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#14"><span class="toc-number">14.</span> <span class="toc-text">extra_hosts</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#15"><span class="toc-number">15.</span> <span class="toc-text">image</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#16"><span class="toc-number">16.</span> <span class="toc-text">links</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#17"><span class="toc-number">17.</span> <span class="toc-text">log_driver</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#18"><span class="toc-number">18.</span> <span class="toc-text">net</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#19"><span class="toc-number">19.</span> <span class="toc-text">ports</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#20"><span class="toc-number">20.</span> <span class="toc-text">volume & volume_driver</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#21"><span class="toc-number">21.</span> <span class="toc-text">volumes_from</span></a></li></ol>
+		</div>
+		
+		<p><code>Docker Compose</code>是一个编排多容器分布式部署的工具，提供命令集管理容器化应用的完整开发周期，包括服务构建，启动和停止。</p>
+<a id="more"></a>
+<p>这篇文章介绍Compose的配置文件，它是一个YAML文件。所有的顶层字符定义了一个服务，每一个服务可以有多个配置，其中至少有<code>image</code>或<code>build</code>指定其镜像来源。默认配置文件是<code>./docker-compose.yml</code>。</p>
+<p>和<code>docker run</code>一样，在Dockerfile中指定过的配置项(比如：<code>CMD</code>， <code>EXPOSE</code>， <code>VOLUME</code>， <code>ENV</code>)无需在<code>Compose</code>配置文件中再次指定。</p>
+<p>接下来介绍<code>Compose</code>服务的配置项，主要有：</p>
+<ul>
+<li><a href="#1">build</a></li>
+<li><a href="#2">cap_add &amp; cap_drop</a></li>
+<li><a href="#3">command</a></li>
+<li><a href="#4">cgroup_parent</a></li>
+<li><a href="#5">container_name</a></li>
+<li><a href="#6">devices</a></li>
+<li><a href="#7">dns &amp; dns_search</a></li>
+<li><a href="#8">dockerfile</a></li>
+<li><a href="#9">env_file</a></li>
+<li><a href="#10">environment</a></li>
+<li><a href="#11">expose</a></li>
+<li><a href="#12">extends</a></li>
+<li><a href="#13">external_links</a></li>
+<li><a href="#14">extra_hosts</a></li>
+<li><a href="#15">image</a></li>
+<li><a href="#16">links</a></li>
+<li><a href="#17">log_driver</a></li>
+<li><a href="#18">net</a></li>
+<li><a href="#19">ports</a></li>
+<li><a href="#20">volumes &amp; volume_driver</a></li>
+<li><a href="#21">volumes_from</a></li>
+</ul>
+<h3 id="1">build</h3>
+
+<p><code>build</code>的值或者是一个包含了<code>Dockerfile</code>文件的目录，或者是一个git库的URL。使用相对路径时，相对目录是<code>Compose</code>配置文件所在的目录。这个目录也作为上下文<code>context</code>被发送给<code>docker daemon</code>。<br>格式：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">build: /path/to/build/dir</span><br></pre></td></tr></table></figure></p>
+<p><code>build</code>不能和<code>image</code>同时使用</p>
+<h3 id="2">cap_add &amp; cap_drop</h3>
+
+<p>添加或取消容器的能力<code>capabilities</code>，可以通过<code>man 7 capabilities</code>查看后面值的列表；<br>示例：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cap</span>_add:</span><br><span class="line">	- ALL</span><br><span class="line"><span class="built_in">cap</span>_drop:</span><br><span class="line">	- NET_ADMIN</span><br><span class="line">	- SYS_ADMIN</span><br></pre></td></tr></table></figure></p>
+<h3 id="3">command</h3>
+
+<p>使用<code>command:</code>可以覆盖<code>Dockerfile</code>中或拉去的镜像的<code>CMD</code>命令；<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">command</span>: bundle <span class="built_in">exec</span> thin -p <span class="number">3000</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="4">cgroup_parent</h3>
+
+<p>为容器指定一个可选的父cgroup<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cgroup_parent: m-executor-abcd</span><br></pre></td></tr></table></figure></p>
+<h3 id="5">container_name</h3>
+
+<p>指定一个容器名称，这回覆盖默认的容器名称<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">container_name: my-web-container</span><br></pre></td></tr></table></figure></p>
+<p>由于容器的名称必须互不相同，当指定了自定义的容器名称后，在使用<code>docker-compose scale</code>命令时不能指定相应服务的容器个数大于1。否则会出错。</p>
+<h3 id="6">devices</h3>
+
+<p>列出设备间的映射，这和在docker client中使用<code>--device</code>标识是一样的。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">devices:</span><br><span class="line">  - <span class="string">"/dev/ttyUSB0:/dev/ttyUSB0"</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="7">dns &amp; dns_search</h3>
+
+<p><code>dns</code>为服务容器指定dns服务器，<code>dns_search</code>为容器指定<code>dns search domain</code>。两个都可以是单个值也可以是列表：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">dns: <span class="number">8.8</span>.<span class="number">8.8</span></span><br><span class="line"></span><br><span class="line">dns:</span><br><span class="line">	- <span class="number">8.8</span>.<span class="number">8.8</span></span><br><span class="line">	- <span class="number">8.8</span>.<span class="number">4.4</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="8">dockerfile</h3>
+
+<p><code>dockerfile</code>指令必须和<code>build</code>指令一起使用，指定可选的<code>Dockerfile</code>的位置。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">build： /path/to/build/dir</span><br><span class="line">dockerfile: Dockerfile-alternate</span><br></pre></td></tr></table></figure></p>
+<p><code>dockerfile</code>指令不能和<code>image</code>指令一起使用，否则会报错；</p>
+<h3 id="9">env_file</h3>
+
+<p>通过文件添加环境变量，可以是单个也可以是列表；如果通过<code>docker-compose -f</code>指定了Compose配置文件的位置，则env_file的位置相对于这个位置。</p>
+<p>通过<code>environment</code>指令指定的环境变量会覆盖<code>env_file</code>中定义的环境变量。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">env_file: .env</span><br><span class="line"></span><br><span class="line">env_file:</span><br><span class="line">	- ./common.env</span><br><span class="line">	- ./apps/web.env</span><br></pre></td></tr></table></figure></p>
+<p>env文件中，每一行是一个<code>VAR=VAL</code>对，以<code>#</code>开头的行被认为是注释，忽略掉，例如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Set Rails/Rack environment</span></span><br><span class="line">RACK_ENV=development</span><br></pre></td></tr></table></figure></p>
+<h3 id="10">environment</h3>
+
+<p>用于添加环境变量，可以有如下两种格式：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">environment:</span><br><span class="line">  RACK_ENV: development</span><br><span class="line">  SHOW: <span class="string">'true'</span></span><br><span class="line">  SESSION_SECRET:</span><br><span class="line"></span><br><span class="line">environment:</span><br><span class="line">  - RACK_ENV=development</span><br><span class="line">  - SHOW=<span class="literal">true</span></span><br><span class="line">  - SESSION_SECRET</span><br></pre></td></tr></table></figure></p>
+<h3 id="11">expose</h3>
+
+<p>对外暴露端口，但不绑定到宿主机上，这些端口一般只用于<code>--link</code>。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">expose:</span><br><span class="line">	- <span class="string">"3000"</span></span><br><span class="line">	- <span class="string">"8000"</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="12">extends</h3>
+
+<p><code>extends</code>指令使用其它服务的配置扩展当前服务的配置，通常在<code>extends</code>中要指定<code>file</code>和<code>service</code>两个标识。<code>file</code>用来指定用于扩展的服务的配置文件；<code>service</code>用于指定用于扩展的服务的名称。例如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">web:</span><br><span class="line">  extends:</span><br><span class="line">    file: common-services.yml</span><br><span class="line">    service: webapp</span><br></pre></td></tr></table></figure></p>
+<p>上述配置的意思是使用<code>common-services.yml</code>中的<code>webapp</code>服务扩展当前文件中的<code>web</code>服务。扩展的结果就好像在当前服务(<code>web</code>)的配置中添加了扩展服务(<code>webapp</code>)的配置一样。关于配置扩展的更多内容不久后会写一篇单独的文章介绍。</p>
+<h3 id="13">external_links</h3>
+
+<p><code>external_links</code>指令用于连接定义在<code>docker-compose.yml</code>文件之外甚至<code>Compose</code>项目之外的容器，尤其是提供了共享服务的容器。其值的格式与<code>--link</code>标识很像，也是<code>CONTAINER:ALIAS</code>的形式，例如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">external_links:</span><br><span class="line"> - redis_1</span><br><span class="line"> - project_db_1:mysql</span><br><span class="line"> - project_db_1:postgresql</span><br></pre></td></tr></table></figure></p>
+<h3 id="14">extra_hosts</h3>
+
+<p><code>extra_hosts</code>指令用于向容器添加IP到主机名的映射，这些数据会写入到容器的<code>/etc/hosts</code>文件中，格式为：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">extra_hosts:</span><br><span class="line"> - <span class="string">"somehost:162.242.195.82"</span></span><br><span class="line"> - <span class="string">"otherhost:50.31.209.229"</span></span><br></pre></td></tr></table></figure></p>
+<p>写入到<code>/etc/hosts</code>文件中为：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">162.242</span>.<span class="number">195.82</span>  somehost</span><br><span class="line"><span class="number">50.31</span>.<span class="number">209.229</span>   otherhost</span><br></pre></td></tr></table></figure></p>
+<h3 id="15">image</h3>
+
+<p><code>image</code>指令用于指定服务使用的镜像，本地的或是远程的，<code>Compose</code>会自动将其<code>pull</code>下来。其值可以是标签，也可以是镜像ID。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">image: ubuntu</span><br><span class="line">image: orchardup/postgresql</span><br><span class="line">image: a4bc65fd</span><br></pre></td></tr></table></figure></p>
+<h3 id="16">links</h3>
+
+<p><code>links</code>指令用于连接到其他服务的容器，值的格式为<code>SERVICE:ALIAS</code>(服务名:别名)，也可以只指定服务名(此时，别名和服务名一样)。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">links:</span><br><span class="line"> - db</span><br><span class="line"> - db:database</span><br><span class="line"> - redis</span><br></pre></td></tr></table></figure></p>
+<p>和<code>docker run</code>中的<code>--link</code>标识一样，<code>links</code>也会将连接到的容器的IP地址写入<code>/etc/hosts</code>文件。同时也会创建相应的环境变量。</p>
+<h3 id="17">log_driver</h3>
+
+<p>为服务指定log driver，这和<code>docker run</code>中的<code>--log-driver</code>标签是一样的，默认值是<code>json-file</code>。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">log</span>_driver: <span class="string">"json-file"</span></span><br><span class="line"><span class="built_in">log</span>_driver: <span class="string">"syslog"</span></span><br><span class="line"><span class="built_in">log</span>_driver: <span class="string">"none"</span></span><br></pre></td></tr></table></figure></p>
+<p>只有<code>json-file</code>被<code>docker-compose up</code>和<code>docker-compose logs</code>直接支持。使用其他的driver不会产生日志。</p>
+<h3 id="18">net</h3>
+
+<p>为服务容器指定网络模式，其作用和<code>docker run</code>中的<code>--net</code>标识是一样的。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">net: <span class="string">"bridge"</span></span><br><span class="line">net: <span class="string">"none"</span></span><br><span class="line">net: <span class="string">"container:[name or id]"</span></span><br><span class="line">net: <span class="string">"host"</span></span><br></pre></td></tr></table></figure></p>
+<p>更多内容请参考<a href="/2015/11/11/Docker之四种网络模式">Docker之四种网络模式</a></p>
+<h3 id="19">ports</h3>
+
+<p>对外暴露接口，与<code>docker run</code>中的<code>-p</code>标识的效果一样，将容器的内部接口映射到宿主机的接口上。值的格式也与<code>-p</code>标识一样。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">ports:</span><br><span class="line"> - <span class="string">"3000"</span></span><br><span class="line"> - <span class="string">"3000-3005"</span></span><br><span class="line"> - <span class="string">"8000:8000"</span></span><br><span class="line"> - <span class="string">"9090-9091:8080-8081"</span></span><br><span class="line"> - <span class="string">"49100:22"</span></span><br><span class="line"> - <span class="string">"127.0.0.1:8001:8001"</span></span><br><span class="line"> - <span class="string">"127.0.0.1:5000-5010:5000-5010"</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="20">volume &amp; volume_driver</h3>
+
+<p>向容器添加卷，既可以指定容器中的目录为卷，也可以将宿主机的目录挂载到容器中作为卷。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">volumes:</span><br><span class="line"> - /var/lib/mysql</span><br><span class="line"> - ./cache:/tmp/cache</span><br><span class="line"> - ~/configs:/etc/configs/:ro</span><br></pre></td></tr></table></figure></p>
+<p>可以指定宿主机上的相对路径，指定相对路径时其相对于<code>Compose</code>配置文件的目录，相对路径必须以<code>.</code>或<code>..</code>开头。</p>
+<h3 id="21">volumes_from</h3>
+
+<p>挂载其他容器或服务中的数据卷，通时可选指定<code>ro</code>或<code>rw</code>。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">volumes_from:</span><br><span class="line"> - service_name</span><br><span class="line"> - container_name</span><br><span class="line"> - service_name:rw</span><br></pre></td></tr></table></figure></p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/docker/">docker</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Docker-三剑客/">Docker 三剑客</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/12/05/Docker三剑客之Compose-三/" data-title="Docker三剑客之Compose(三)——Compose配置文件详解 | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/12/15/Ubuntu下搭建Kubernetes集群/" title="Ubuntu下搭建Kubernetes集群">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Ubuntu下搭建Kubernetes集群</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/12/04/Docker三剑客之Compose-二/"  title="Docker三剑客之Compose(二)——Compose命令详解">
+ <strong>NEXT:</strong><br/> 
+ <span>Docker三剑客之Compose(二)——Compose命令详解
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">build</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">cap_add & cap_drop</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">command</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4"><span class="toc-number">4.</span> <span class="toc-text">cgroup_parent</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5"><span class="toc-number">5.</span> <span class="toc-text">container_name</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6"><span class="toc-number">6.</span> <span class="toc-text">devices</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7"><span class="toc-number">7.</span> <span class="toc-text">dns & dns_search</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8"><span class="toc-number">8.</span> <span class="toc-text">dockerfile</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9"><span class="toc-number">9.</span> <span class="toc-text">env_file</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10"><span class="toc-number">10.</span> <span class="toc-text">environment</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11"><span class="toc-number">11.</span> <span class="toc-text">expose</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12"><span class="toc-number">12.</span> <span class="toc-text">extends</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#13"><span class="toc-number">13.</span> <span class="toc-text">external_links</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#14"><span class="toc-number">14.</span> <span class="toc-text">extra_hosts</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#15"><span class="toc-number">15.</span> <span class="toc-text">image</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#16"><span class="toc-number">16.</span> <span class="toc-text">links</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#17"><span class="toc-number">17.</span> <span class="toc-text">log_driver</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#18"><span class="toc-number">18.</span> <span class="toc-text">net</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#19"><span class="toc-number">19.</span> <span class="toc-text">ports</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#20"><span class="toc-number">20.</span> <span class="toc-text">volume & volume_driver</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#21"><span class="toc-number">21.</span> <span class="toc-text">volumes_from</span></a></li></ol>
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>

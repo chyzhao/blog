@@ -1,0 +1,379 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Ubuntu下搭建Kubernetes集群 | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="Kubernetes是Google开源的容器集群管理系统。它构建Docker技术之上，为容器化的应用提供资源调度、部署运行、服务发现、扩容缩容等整一套功能，本质上可看作是基于容器技术的mini-PaaS平台。
+本文作为Kubernetes分类下的第一篇文章，首先介绍怎么在Ubuntu环境下搭建Kubernetes集群，作为开发和测试环境。">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/12/15/Ubuntu下搭建Kubernetes集群/" title="Ubuntu下搭建Kubernetes集群" itemprop="url">Ubuntu下搭建Kubernetes集群</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-12-15T13:47:59.000Z" itemprop="datePublished">2015-12-15</time>
+    更新日期:<time datetime="2015-12-17T03:11:32.000Z" itemprop="dateModified">2015-12-17</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+		</div>
+		
+		<p>Kubernetes是Google开源的容器集群管理系统。它构建Docker技术之上，为容器化的应用提供资源调度、部署运行、服务发现、扩容缩容等整一套功能，本质上可看作是基于容器技术的mini-PaaS平台。</p>
+<p>本文作为Kubernetes分类下的第一篇文章，首先介绍怎么在Ubuntu环境下搭建Kubernetes集群，作为开发和测试环境。<br><a id="more"></a></p>
+<p>####集群节点：</p>
+<ul>
+<li>node1:10.203.2.239 master and minion   物理机</li>
+<li>node2:10.203.2.233 minion   Vbox中的虚拟机</li>
+<li>node3:10.203.2.243 minion   Vbox中的虚拟机</li>
+</ul>
+<p>如上面的信息，此集群共有三个节点，其中我的笔记本本机(IP为10.203.2.239)既作为Master节点又作为Minion节点，运行Ubuntu14.04LTS版本系统。后面的两个是我在本机中使用Virtualbox创建的虚拟机，运行Ubuntu server：14.04.2版本系统。虚拟机使用桥接网络所以可以分配到与笔记本本机在同一网段的IP，且三个机器之间可以互相访问。</p>
+<p>接下来配置Master到两个Minion的SSH无密码访问，这里我参考了<a href="http://blog.csdn.net/leexide/article/details/17252369" target="_blank" rel="external">Linux/UNIX下使用ssh-keygen设置SSH无密码登录</a>,可以参考这个教程配置，很简单。其中执行<code>ssh-keygen -t rsa</code>命令时可以一直按回车键跳过输入的部分。<strong>注意，配置的登陆用户是<code>root</code>用户</strong>。</p>
+<p>配置完无密码登陆后，我们在三个机器上安装Docker，在这里我使用了<code>Daocloud</code>提供的安装方式，由于是国内的服务器，安装很块，链接为:<a href="http://get.daocloud.io/#install-docker" target="_blank" rel="external">在Linux上安装Docker</a>。这里需要提示的是，如果你使用桥接模式后虚拟机无法上网(Ping不通www.baidu.com，我遇到了这个问题，目前还没解决，但依然可以建立集群，尚不知对Kubernetes集群的影响)，但宿主机可以上网，你可以在设置中将网络模式改为<code>NAT</code>模式，安装完Docker后再改回桥接模式(NAT模式下，宿主机无法访问虚拟机，不能建立集群).</p>
+<p><strong>Note:从这里开始请使用root用于登陆本机，即执行<code>su -</code></strong>(注意后面的横线不能少)</p>
+<p><code>Docker</code>也安装完成后，我们就可以搭建<code>Kubernetes</code>集群了，首先下载源码，在这里还有一个问题，之前一直使用<code>github</code>官方的<code>Kubernetes</code>源码，但一直搭建不好，出了各种问题，之后看到了国内的一个库，应该和官方是一样的，而且速度快多了，地址是<a href="https://git.oschina.net/lyric/kubernetes" target="_blank" rel="external">Kubernetes</a>，大家可以使用这个库。</p>
+<p>源码下载好后，需要修改配置文件：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root<span class="comment"># cd kubernetes/cluster/ubuntu</span></span><br><span class="line">root<span class="comment"># vim config-default.sh</span></span><br></pre></td></tr></table></figure></p>
+<p>要修改三个地方：</p>
+<ol>
+<li><code>export nodes=${nodes:-&quot;root@10.203.2.239 root@10.203.2.233 root@10.203.2.243&quot;}</code> 这里是三个节点，有几个就配几个</li>
+<li><code>role=${role:-&quot;ai i i&quot;}</code>这里的值与上面的对应，<code>ai</code>表示既是master又是minion，<code>i</code>表示minion节点。</li>
+<li><code>export NUM_MINIONS=${NUM_MINIONS:-3}</code>这里的数字对应节点的个数</li>
+</ol>
+<p>然后默认下载的二进制执行文件的版本比较老，我们修改以下，使用比较新的版本：<br>还是在<code>kubernetes/cluster/ubuntu</code>文件夹下，打开<code>build.sh</code>文件，修改如下几行：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">FLANNEL_VERSION=<span class="variable">$&#123;FLANNEL_VERSION:-"0.5.3"&#125;</span></span><br><span class="line">ETCD_VERSION=<span class="variable">$&#123;ETCD_VERSION:-"2.2.1"&#125;</span></span><br><span class="line">KUBE_VERSION=<span class="variable">$&#123;KUBE_VERSION:-"1.1.2"&#125;</span></span><br></pre></td></tr></table></figure></p>
+<p>保存上面两个文件。</p>
+<p>下面就开始部署了，<code>kubernetes</code>的部署挺傻瓜的，首先进入<code>kubernetes/cluster</code>文件夹下，执行如下命令：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root<span class="comment"># KUBERNETES_PROVIDER=ubuntu ./kube-up.sh</span></span><br></pre></td></tr></table></figure></p>
+<p>其中<code>KUBERNETES_PROVIDER</code>指明了在Ubuntu上部署集群。</p>
+<p>运行此命令后，kubernetes首先根据指定的版本下载<code>flanneld</code>，<code>etcd</code>，<code>kubernetes</code>的可执行文件，由于国内网速较慢，可能需要一些时间，此后的工作会自动完成。</p>
+<p>执行成功后，另外打开一个控制台，使用<code>kubectl get nodes</code>测试是否搭建成功：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">chy@chy-station:~$ kubectl get nodes</span><br><span class="line">NAME           LABELS                                STATUS    AGE</span><br><span class="line"><span class="number">10.203</span>.<span class="number">2.233</span>   kubernetes.io/hostname=<span class="number">10.203</span>.<span class="number">2.233</span>   Ready     <span class="number">1</span>h</span><br><span class="line"><span class="number">10.203</span>.<span class="number">2.239</span>   kubernetes.io/hostname=<span class="number">10.203</span>.<span class="number">2.239</span>   Ready     <span class="number">1</span>h</span><br><span class="line"><span class="number">10.203</span>.<span class="number">2.243</span>   kubernetes.io/hostname=<span class="number">10.203</span>.<span class="number">2.243</span>   Ready     <span class="number">1</span>h</span><br></pre></td></tr></table></figure></p>
+<p>以上信息表示集群搭建成功。</p>
+<p>关闭集群是在<code>kubernetes/cluster</code>文件夹下执行<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">root<span class="comment"># KUBERNETES_PROVIDER=ubuntu ./kube-down.sh</span></span><br></pre></td></tr></table></figure></p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/docker/">docker</a><a href="/tags/kubernetes/">kubernetes</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Kubernetes/">Kubernetes</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/12/15/Ubuntu下搭建Kubernetes集群/" data-title="Ubuntu下搭建Kubernetes集群 | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/12/29/Kubernetes组件之Pod/" title="Kubernetes组件之Pod">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Kubernetes组件之Pod</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/12/05/Docker三剑客之Compose-三/"  title="Docker三剑客之Compose(三)——Compose配置文件详解">
+ <strong>NEXT:</strong><br/> 
+ <span>Docker三剑客之Compose(三)——Compose配置文件详解
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>

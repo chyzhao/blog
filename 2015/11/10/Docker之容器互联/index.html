@@ -1,0 +1,386 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Docker之容器互联 | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="这是一篇关于docker容器之间互联的文章,主要讲解了使用–link连接容器的方式">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/11/10/Docker之容器互联/" title="Docker之容器互联" itemprop="url">Docker之容器互联</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-11-10T13:09:50.000Z" itemprop="datePublished">2015-11-10</time>
+    更新日期:<time datetime="2016-01-21T12:28:23.000Z" itemprop="dateModified">2016-01-21</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+		</div>
+		
+		<p>这是一篇关于docker容器之间互联的文章,主要讲解了使用–link连接容器的方式<br><a id="more"></a><br>Docker容器间的互联,意思是一个容器可以使用另一个或多个其他容器提供的功能.比如,一个web应用需要数据库的支持,除了在一个容器内同时运行web应用程序和数据库程序之外,更好的办法是用两个容器.一个运行web应用,另一个专门提供数据库服务.这样不仅方便管理,同时也节省资源,尤其是当同一宿主机下运行了多个需要数据库服务的容器时,我们可以使用一个数据库容器同时向它们提供服务.</p>
+<p>上次讲Docker的数据管理时,说道Docker使用卷和卷容器来使两个容器通信,使用的是-v标志和–volumes-from参数,但这种方式最主要的任务是提供数据而不是服务,是为了方便数据迁移和备份.而要提供服务的话,使用的是–link参数.(–link参数是用于同一主机上的两个容器之间的互联,而不同主机的两个容器之间的互联我们以后介绍).</p>
+<p>使用–link互联有什么好处呢?如果不使用–link的话,我们要让a容器使用b容器提供的服务,就需要b容器通过EXPOSE指令或-e标志将自己的端口暴露出来供其他的容器访问.举个例子,假设你创建了一个运行mysql服务的容器,要给其他的容器提供数据库服务,就要在创建它的Dockerfile中使用EXPOSE指令打开一个端口:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">EXPOSE <span class="number">3306</span></span><br></pre></td></tr></table></figure></p>
+<p>而且在运行容器时要使用-p标识将端口暴露出来:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --name mysql -p <span class="number">3306</span>:<span class="number">3306</span> <span class="operator">-d</span> mysql //或者使用-P</span><br></pre></td></tr></table></figure></p>
+<p>这样其它的容器才能访问到mysql服务.<br>但这样会使端口保留在外,任何容器甚至其他工具均能访问,这会带来一定的安全问题.</p>
+<p>下面结合使用mysql镜像和wordpress镜像搭建wordpress博客看一下–link怎么用.(mysql.wordpress镜像均来自Docker Hub官方镜像)<br>首先启动mysql容器,使用如下命令:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --name mysql <span class="operator">-d</span> mysql</span><br></pre></td></tr></table></figure></p>
+<p>我们给这个mysql容器取名为mysql,这里最好不要使用默认的名字,而是给它取一个好记的名字,名字是容易的唯一标示,这个名字以后要用.</p>
+<p>然后我们运行一个wordpress容器,这里运行时需要一些参数.我把官方的说明粘贴在下面:<br><img src="/img/wordpress.png" alt=""><br>可以看到使用docker run 运行wordpress时可以通过-e标志指定一些参数,如主机地址,用户名和密码,这里我们都使用默认,你也可以自己设定.<br>我们通过如下命令启动wordpress:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --name wordpress --link mysql:mysql -p <span class="number">8080</span>:<span class="number">80</span> <span class="operator">-d</span> wordpress</span><br></pre></td></tr></table></figure></p>
+<p>这里我为运行的容器取名wordpress,由于一个博客是需要提供给外部访问的,所以我们用-p标志将容器的80端口(wordpress默认绑定在80端口上)绑定在了宿主机的8080端口上(你也可以指定其他端口,如12345).这样我们在宿主机浏览器的地址栏输入:localhost:8080就可以看到一个新建的博客了.</p>
+<p>最重要的就是–link参数,这也是我们这篇文章的主题,–link的格式为: –link name:alias<br>其中name是提供服务的容器的名字,这里就是提供mysql服务的mysql容器,alias是连接的别名.</p>
+<p>Docker通过两种方式为容器公开连接信息:</p>
+<ul>
+<li>环境变量</li>
+<li>更新hosts文件</li>
+</ul>
+<p>我们执行如下命令:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker <span class="built_in">exec</span> wordpress env</span><br></pre></td></tr></table></figure></p>
+<p>这条命令用docker exec在wordpress中执行了env命令,env用户显示当前容器中定义的环境变量,运行它,我们可以看到如下信息:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">chy@chy-station:~$ docker <span class="built_in">exec</span> wordpress env</span><br><span class="line">PATH=/usr/<span class="built_in">local</span>/sbin:/usr/<span class="built_in">local</span>/bin:/usr/sbin:/usr/bin:/sbin:/bin</span><br><span class="line">HOSTNAME=a4d68974e452</span><br><span class="line">MYSQL_PORT=tcp://<span class="number">172.17</span>.<span class="number">0.2</span>:<span class="number">3306</span></span><br><span class="line">MYSQL_PORT_3306_TCP=tcp://<span class="number">172.17</span>.<span class="number">0.2</span>:<span class="number">3306</span></span><br><span class="line">MYSQL_PORT_3306_TCP_ADDR=<span class="number">172.17</span>.<span class="number">0.2</span></span><br><span class="line">MYSQL_PORT_3306_TCP_PORT=<span class="number">3306</span></span><br><span class="line">MYSQL_PORT_3306_TCP_PROTO=tcp</span><br><span class="line">MYSQL_NAME=/wordpress/mysql</span><br><span class="line">MYSQL_ENV_MYSQL_ROOT_PASSWORD=<span class="number">838566</span></span><br><span class="line">MYSQL_ENV_MYSQL_MAJOR=<span class="number">5.7</span></span><br><span class="line">MYSQL_ENV_MYSQL_VERSION=<span class="number">5.7</span>.<span class="number">9</span>-<span class="number">1</span>debian8</span><br><span class="line">PHP_INI_DIR=/usr/<span class="built_in">local</span>/etc/php</span><br><span class="line">PHP_EXTRA_BUILD_DEPS=apache2-dev</span><br><span class="line">PHP_EXTRA_CONFIGURE_ARGS=--with-apxs2</span><br><span class="line">GPG_KEYS=<span class="number">0</span>BD78B5F97500D450838F95DFE857D9A90D90EC1 <span class="number">6</span>E4F6AB321FDC07F2C332E3AC2BF0BC433CFC8B3</span><br><span class="line">PHP_VERSION=<span class="number">5.6</span>.<span class="number">15</span></span><br><span class="line">WORDPRESS_VERSION=<span class="number">4.3</span>.<span class="number">1</span></span><br><span class="line">WORDPRESS_SHA1=b2e5652a6d2333cabe7b37459362a3e5b8b66221</span><br><span class="line">HOME=/root</span><br></pre></td></tr></table></figure></p>
+<p>我们看到一系列的以MYSQL_开头的环境变量,这些都与mysql数据库有关,wordpress正是使用这些变量来与mysql服务进行连接.</p>
+<p>关于<code>--link</code>时产生的环境变量，以下这些信息你应该知道：</p>
+<p>当我们使用<code>--link</code>将source容器连接到target容器时，Docker会在target中生成一些环境变量，也会将source容器中已有的环境变量加入到target中。其中source中已有的环境变量包括：</p>
+<ul>
+<li><code>Dockerfile</code>中通过<code>ENV</code>指令指定的环境变量；</li>
+<li>启动source容器时通过<code>-e</code>，<code>--env</code>或<code>--env-file</code>指定的环境变量。</li>
+</ul>
+<p>此外，Docker会在target容器中生成的环境变量包括：<br><code>&lt;alias&gt;_NAME</code> 变量，其中<alias>是连接的别名；<br>Docker还为source容器中每个暴露(expose)的端口生成一组环境变量，其中每个变量都有以下前缀：<br><code>&lt;name&gt;_PORT_&lt;port&gt;_&lt;protocol&gt;</code><br>其中<code>&lt;name&gt;</code>是连接的别名，通过<code>--link</code>指定；<code>&lt;port&gt;</code>是要暴露的端口；<code>&lt;protocol&gt;</code>是UDP或TCP。<br>使用这个前缀，Docker为每个暴露的端口生成的一组环境变量如下：</alias></p>
+<ul>
+<li><code>prefix_ADDR</code>:表示source容器的IP地址，例如：<code>WEBDB_PORT_5432_TCP_ADDR=172.17.0.82</code>；</li>
+<li><code>prefix_PORT</code>:表示要暴露的端口号，例如：<code>WEBDB_PORT_5432_TCP_PORT=5432</code>；</li>
+<li><code>prefix_PROTO</code>:表示协议，<code>udp</code>或<code>tcp</code>，例如：<code>WEBDB_PORT_5432_TCP_PROTO=tcp</code></li>
+</ul>
+<p>如果source容器暴露了多个端口，那么每一个端口都会在target容器中生成一组这样的环境变量。<br>此外，Docker还会在target容器中生成一个表示URL的环境变量。名字为<code>&lt;alias&gt;_PORT</code>,其中<code>&lt;alias&gt;</code>是连接的别名<code>，port</code>是source所有暴露端口中值最小的一个，例如:<code>WEBDB_PORT=tcp://172.17.0.82:5432</code>。</p>
+<p>需要特别指出的是，在重启容器时，容器的IP可能会改变，但Docker默认不会自动更新由<code>--link</code>产生的环境变量。</p>
+<p>除此之外,wordpress还需与mysql容器进行通信,这是通过更新/etc/hosts实现的,我们再执行以下命令查看wordpress的hosts文件:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">chy@chy-station:~$ docker <span class="built_in">exec</span> wordpress cat /etc/hosts</span><br><span class="line"><span class="number">172.17</span>.<span class="number">0.3</span>	a4d68974e452</span><br><span class="line"><span class="number">127.0</span>.<span class="number">0.1</span>	localhost</span><br><span class="line">::<span class="number">1</span>	localhost ip6-localhost ip6-loopback</span><br><span class="line">fe00::<span class="number">0</span>	ip6-localnet</span><br><span class="line">ff00::<span class="number">0</span>	ip6-mcastprefix</span><br><span class="line">ff02::<span class="number">1</span>	ip6-allnodes</span><br><span class="line">ff02::<span class="number">2</span>	ip6-allrouters</span><br><span class="line"><span class="number">172.17</span>.<span class="number">0.2</span>	mysql <span class="number">4964536335</span>b2</span><br></pre></td></tr></table></figure></p>
+<p>其中第一行172.17.0.3是wordpress容器使用的IP地址后面的一串字符是它的主机名称,这是Docker自动生成的.<br>重点关注最后一行,127.17.0.2是mysql容器的IP地址(可以对mysql容器执行docker inspect命令验证),后面还有mysql的标识.<br>与环境变量不同，容器重启后，Docker会自动刷新<code>hosts</code>文件，确保其与当前真实IP地址一致。</p>
+<p>你可以在新建的博客中进行一些操作,如发篇文章什么的,以确定其功能是否正常.<br>那么,wordpress究竟有没有连接到数据库呢,产生这样的怀疑是因为,我们好像没有进行什么配置,而通常情况下要搭建博客需要很多配置项,为了验证是否真的连接到了数据库,我们再启动一个mysql容器连接到正在运行的那个mysql容器,使用如下命令:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --link mysql:mysql --rm mysql sh -c <span class="string">'exec mysql -h"$MYSQL_PORT_3306_TCP_ADDR" -P"$MYSQL_PORT_3306_TCP_PORT" -uroot -p"$MYSQL_ENV_MYSQL_ROOT_PASSWORD"'</span></span><br></pre></td></tr></table></figure></p>
+<p>可以看到我们使用了一些有关mysql服务参数的环境变量,因为新启动的mysql容器也link到了原来的mysql容器,所以在它内部也有这些环境变量.<br>这样我们就登录到了给wordpress提供数据库服务的mysql的命令行控制台了,在控制台我们执行show databases;命令,就可以看到有一个名为wordpress的数据库,那就是wordpress容器建立的数据库,说明我们的连接成功了.<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show databases</span><br><span class="line">    -&gt; ;</span><br><span class="line">+--------------------+</span><br><span class="line">| Database           |</span><br><span class="line">+--------------------+</span><br><span class="line">| information_schema |</span><br><span class="line">| mysql              |</span><br><span class="line">| performance_schema |</span><br><span class="line">| sys                |</span><br><span class="line">| wordpress          |</span><br><span class="line">+--------------------+</span><br><span class="line"><span class="number">5</span> rows <span class="keyword">in</span> <span class="built_in">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure></p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/docker/">docker</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Docker-Others/">Docker Others</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/11/10/Docker之容器互联/" data-title="Docker之容器互联 | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/11/11/Docker之四种网络模式/" title="Docker之四种网络模式">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Docker之四种网络模式</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/11/09/Go-chan之优先策略/"  title="Go chan之优先策略">
+ <strong>NEXT:</strong><br/> 
+ <span>Go chan之优先策略
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>

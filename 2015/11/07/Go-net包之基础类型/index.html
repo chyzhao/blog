@@ -1,0 +1,365 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Go net包之基础类型 | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="整理了net包的基础类型,分享一下.">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/11/07/Go-net包之基础类型/" title="Go net包之基础类型" itemprop="url">Go net包之基础类型</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-11-07T14:02:34.000Z" itemprop="datePublished">2015-11-07</time>
+    更新日期:<time datetime="2015-11-24T02:24:23.000Z" itemprop="dateModified">2015-11-24</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+		</div>
+		
+		<p>整理了net包的基础类型,分享一下.<br><a id="more"></a><br>介绍下net包下的基本类型:</p>
+<p><strong>1 IP</strong><br>IP类型被定义程一个[]byte类型,即一个字节切片:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> IP []<span class="typename">byte</span></span><br></pre></td></tr></table></figure></p>
+<p>此类型既可以表示IPv4类型,也可以表示IPv6类型.<br>可以通过net.ParseIP(s string)来获取一个IP类型的实例:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">str := <span class="string">"127.0.0.1"</span></span><br><span class="line">ip := net.ParseIP(str)</span><br></pre></td></tr></table></figure></p>
+<p>常用方法:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> (ip IP)Equal(x IP) <span class="typename">bool</span> <span class="comment">//比较两个IP是否相等</span></span><br><span class="line"><span class="keyword">func</span> (ip IP)DefaultMask() IPMask <span class="comment">//获取IP对应的掩码</span></span><br><span class="line">Mask(m IPMask) IP <span class="comment">//获取由特定掩码对应的IP,一般用于获取网络号</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>2 IPMask</strong><br>掩码类型,其实现同样是byte slice<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> IPMask []<span class="typename">byte</span></span><br></pre></td></tr></table></figure></p>
+<p>用法:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> IPv4Mask(a, b, c, d <span class="typename">byte</span>) IPMask <span class="comment">//用一个4字节的IPv4地址创建一个掩码</span></span><br><span class="line"><span class="keyword">func</span> CIDRMask(ones, bits <span class="typename">int</span>) IPMask <span class="comment">//用码分多址创建一个掩码,其中ones是总长度(32),bits为全1部分的长度</span></span><br></pre></td></tr></table></figure></p>
+<p>方法:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> (m IPMask) Size() (ones, bits <span class="typename">int</span>) <span class="comment">//返回CIDR中的总长度和为1部分的长度</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>3 IPNet</strong><br>由IP类型和IPMASK类型组成的一个网段,其字符串形式为CIDR地址,例如:”202.114.0.1/24”<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> IPNet <span class="keyword">struct</span> &#123;</span><br><span class="line">	IP   IP     <span class="comment">// network number</span></span><br><span class="line">	Mask IPMask <span class="comment">// network mask</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>主要方法:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> (net *IPNet)Contains(ip IP) <span class="typename">bool</span> <span class="comment">//检验一个网段是否包含了一个IP地址</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>4 IPAddr</strong><br>这是一个仅包含了一个IP字段的结构体,常用作一些函数的返回值:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> IPAddr <span class="keyword">struct</span> &#123;</span><br><span class="line">    IP   IP</span><br><span class="line">    Zone <span class="typename">string</span> <span class="comment">//only used in ipv6</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>它的主要用途是通过IP主机名进行DNS查找,如要通过一个域名查找对应的IP地址,有如下方法:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> ResolveIPAddr(net, addr <span class="typename">string</span>) (*IPAddr, error) <span class="comment">//第一个参数只能是"ip","ip4"或"ip6",第二个参数为要解析的域名</span></span><br><span class="line"></span><br><span class="line">addr, _ := net.ResolveIPAddr(<span class="string">"ip"</span>, <span class="string">"www.baidu.com"</span>)</span><br></pre></td></tr></table></figure></p>
+<p><strong>5 TCPAddr</strong><br>表示一个TCP套接字,定义如下:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> TCPAddr <span class="keyword">struct</span> &#123;</span><br><span class="line">	IP   IP <span class="comment">//IP地址</span></span><br><span class="line">	Port <span class="typename">int</span> <span class="comment">//端口号</span></span><br><span class="line">	Zone <span class="typename">string</span> <span class="comment">// IPv6 scoped addressing zone</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>主要方法:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">func</span> ResolveTCPAddr(net, addr <span class="typename">string</span>) (*TCPAddr, error) <span class="comment">//解析域名和端口号,得到IP地址和端口号.第一个字段只能是"tcp","tcp4"或"tcp6",第二个参数为"host:port的形式"</span></span><br><span class="line"></span><br><span class="line">addr, _ := net.ResolveTCPAddr(<span class="string">"tcp"</span>, <span class="string">"www.baidu.com:80"</span>) </span><br><span class="line">fmt.Println(addr)   <span class="comment">//220.181.111.147:80</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>6 UDPAddr</strong><br>与TCPADDR类似,实现为:<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> UDPAddr <span class="keyword">struct</span>&#123;</span><br><span class="line">	IP IP</span><br><span class="line">	Port <span class="typename">int</span></span><br><span class="line">	Zone <span class="typename">string</span> <span class="comment">//ipv6</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">func</span> ResolveUDPAddr(net, addr <span class="typename">string</span>)(*UDPAddr, error) <span class="comment">//解析UDP套接字获取IP和端口号</span></span><br></pre></td></tr></table></figure></p>
+<p><strong>7 UnixAddr</strong><br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> UnixAddr <span class="keyword">struct</span> &#123;</span><br><span class="line">	Name <span class="typename">string</span></span><br><span class="line">	Net <span class="typename">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">func</span> ResolveUnixAddr(net, addr <span class="typename">string</span>) (*UnixAddr, error)</span><br></pre></td></tr></table></figure></p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/golang/">golang</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Golang/">Golang</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/11/07/Go-net包之基础类型/" data-title="Go net包之基础类型 | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/11/08/Docker之数据管理/" title="Docker之数据管理">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Docker之数据管理</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/11/07/Go-net包之Dail与Listen示例/"  title="Go net包之Dail与Listen示例">
+ <strong>NEXT:</strong><br/> 
+ <span>Go net包之Dail与Listen示例
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>

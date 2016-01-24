@@ -1,0 +1,369 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Docker之理解image，container和storage driver | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="本篇文查主要介绍镜像，容器的文件系统，写时复制(CoW)机制和数据卷">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/11/27/Docker之理解image，container和storage-driver/" title="Docker之理解image，container和storage driver" itemprop="url">Docker之理解image，container和storage driver</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-11-27T03:23:40.000Z" itemprop="datePublished">2015-11-27</time>
+    更新日期:<time datetime="2015-11-30T02:59:13.000Z" itemprop="dateModified">2015-11-30</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+		</div>
+		
+		<p>本篇文查主要介绍镜像，容器的文件系统，写时复制(CoW)机制和数据卷<br><a id="more"></a></p>
+<p>为了高效的使用<code>Docker</code>，必须理解Docker的文件系统，了解容器，镜像是怎么存储的，以及在对容器进行读写操作时，其文件系统发生了哪些变化。<br>本文的图片来自于<code>Docker</code>官网，地址为：<a href="http://docs.docker.com/engine/userguide/storagedriver/selectadriver/" target="_blank" rel="external">docker docs</a></p>
+<p>##镜像(image)和容器(container)都是基于层(layer)的<br><code>Docker</code>的镜像是由一系列只读层组成的一个栈，上面的层依赖其下面的层，这些层从外面看起来是一个整体。栈底的镜像被称作基础镜像(base image)，所有上面的层都基于这个基础镜像。<br>下面是<code>ubuntu：15.04</code>镜像各层之间的关系：<br><img src="/img/2015-11-27-1.png" alt=""><br>当你在一个容器中进行了某些操作比如添加了一个文件，然后调用<code>docker commit</code>操作创建新的镜像时，<code>Docker</code>会在镜像栈的最上面创建一个新的层，这个层包含了新添加的文件。<br>或者，通过<code>Dockerfile</code>创建新的镜像时，通过<code>FROM</code>指令指定的就是基础镜像。此后的每条指令都会创建一个新的层，层中包含了这条指令对镜像的修改。</p>
+<p>容器<code>container</code>不仅包含镜像的所有层，它还在最上面添加了一个可读层称作容器层<code>container layer</code>。下面是一个基于<code>ubuntu:15.04</code>运行起来的容器的层之间的关系：<br><img src="/img/2015-11-27-2.jpg" alt=""><br>容器与镜像的主要区别就在于这个可写层(writable layer),对容器的所有写操作无论是添加新内容还是修改原来的内容都会保存在这个可读层中。如果容器被删除，writable layer也会被删除，但镜像层不变。<br>正是因为每个镜像都有自己的可写层，所以容器之间可以共享同一个镜像的各层。下面是多个容器使用同一个镜像的例子：<br><img src="/img/2015-11-27-3.jpg" alt=""></p>
+<p>存储驱动器需要管理所有的镜像层和容器只读层，而进行这些管理除了需要分层机制外还需要写时复制策略(CoW)。</p>
+<p>##写时复制策略<br>CoW策略有两个关键词：“分享”<code>share</code>和“复制”<code>copy</code>。这个策略是指，所有需要某个文件的进程都共用同一个文件实例而不是各自拥有一份副本，即<strong>分享</strong>。一旦有进程需要改写某个文件，系统就给他一个文件副本供它操作，即<strong>复制</strong>。只有需要写的进程才会拥有一份源文件的拷贝，其他进程仍然共享源文件。<br><code>Docker</code>在镜像管理和容器中都使用了写时复制策略，这不仅缩小了镜像对磁盘空间的利用率，也加快了容器的启动速度。</p>
+<p>####共享使镜像更小<br>所有镜像和容器的层都存储在宿主机中，并由<code>storage driver</code>管理。<br>当我们在本地执行<code>docker pull</code>命令时，可以看到下载了多个文件，每个文件都是一个镜像层，每一个镜像层都有一个标识符(UUID)，这些层加在一起组成了一个完整的镜像。<br>上面已经提到，镜像之间可以共享镜像层的，也就是说，当执行<code>pull</code>操作时，如果要拉取的镜像与本地已有的镜像共享某些层，这些层不会重复下载，而是只下载本地没有的层。<br>在基于已有镜像创建新镜像时同样如此。比如，在一个空文件夹下创建如下<code>Dockerfile</code>：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FROM ubuntu:<span class="number">15.04</span></span><br><span class="line">RUN <span class="built_in">echo</span> <span class="string">"hello"</span> &gt; /tmp/newfile</span><br></pre></td></tr></table></figure></p>
+<p>基于此Dockerfile创建新镜像，运行<code>docker build -t changed-ubuntu .</code>，得到新的镜像changed-ubuntu，在运行<code>docker history</code>命令查看changed-ubuntu，可以看到如下信息：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">IMAGE               CREATED              CREATED BY                                      SIZE                COMMENT</span><br><span class="line"><span class="number">03</span>b964f68d06        About a minute ago   /bin/sh -c <span class="built_in">echo</span> <span class="string">"Hello world"</span> &gt; /tmp/newfile    <span class="number">12</span> B                </span><br><span class="line"><span class="number">013</span>f3d01d247        <span class="number">6</span> weeks ago          /bin/sh -c <span class="comment">#(nop) CMD ["/bin/bash"]             0 B                 </span></span><br><span class="line"><span class="number">2</span>bd276ed39d5        <span class="number">6</span> weeks ago          /bin/sh -c sed -i <span class="string">'s/^#\s*\(deb.*universe\)$/   1.879 kB            </span><br><span class="line">13c0c663a321        6 weeks ago          /bin/sh -c echo '</span><span class="comment">#!/bin/sh' &gt; /usr/sbin/polic   701 B               </span></span><br><span class="line"><span class="number">6</span>e6a100fa147        <span class="number">6</span> weeks ago          /bin/sh -c <span class="comment">#(nop) ADD file:49710b44e2ae0edef4   131.4 MB</span></span><br></pre></td></tr></table></figure></p>
+<p>通过创建时间我们可以看出，刚才的<code>docker build</code>命令仅创建了最上面的层，其大小仅有12B，而它下面的各层其实就是组成ubuntu:15.04镜像的各层，我们可以通过比较UUID确定这一点。新镜像和ubuntu:15.04之间的关系可以用下面的图来表示：<br><img src="/img/2015-11-27-4.jpg" alt=""><br>也就是说，事实上changed-ubuntu镜像仅占用了12B的磁盘空间。</p>
+<p>####复制使容器更高效<br>上面已经提到，每个容器都有属于自己的读写层，读写层下面的层都是只读层，不能被修改。此外，只读层是可以共享的，也就是说一个镜像的各层可以被多个容器同时使用。<br>当容器中发生写操作时，使用写时复制策略，大体步骤如下：</p>
+<ul>
+<li>从上至下搜索要写的文件</li>
+<li>将找到的文件复制(<code>copy up</code>)一份到读写层中</li>
+<li>修改复制后的文件</li>
+</ul>
+<p>如果一个文件被复制到了读写层中，其源文件仍然存在，但是会被读写层中的文件覆盖掉。也就说，源文件并不改变，但其在当前容器中不再发挥作用，而是由复制到读写层的文件代替它的作用。</p>
+<p>将文件复制到读写层的操作<code>copy up</code>会带来不小的开销，尤其是对大文件的操作，层数比较多或是文件在文档树比较深的层次时，开销会更大。索性<code>copy up</code>操作仅在第一次修改文件时才会发生，此后对文件的操作不会引起<code>copy up</code>操作，而是直接对复制到读写层的文件进行操作。</p>
+<p><code>Docker</code>的写时复制策略不仅减小了容器的磁盘开销，而且加快了容器的启动速度。当我们启动一个容器时，<code>Docker</code>仅创建了一个读写层<code>writable layer</code>，而镜像中的只读层是共享的。尤其当多个容器基于一个镜像的时候，这种优势尤其明显。</p>
+<p>##数据卷和存储驱动器<br>当容器被删除时，读写层也被删除，所有没有写入数据卷的内容也都会被删除。数据卷是挂载在容器中的一个目录或文件。<br>数据卷并不由存储驱动(storage driver)管理，写入数据卷的内容绕过存储驱动器直接写在宿主机上。你可以向容器挂在任意数量的数据卷，一个数据卷也可以在多个容器间共享。<br>下面的图展示了数据卷和容器之间的关系：<br><img src="/img/2015-11-27-5.jpg" alt=""><br>当容器被删除时，数据卷中的内容会继续保存在宿主机上。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/docker/">docker</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Docker-Others/">Docker Others</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/11/27/Docker之理解image，container和storage-driver/" data-title="Docker之理解image，container和storage driver | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/11/27/Docker之几种storage-driver比较/" title="Docker之几种storage driver比较">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Docker之几种storage driver比较</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/11/25/Docker命令解读-八/"  title="Docker命令解读(八)">
+ <strong>NEXT:</strong><br/> 
+ <span>Docker命令解读(八)
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>

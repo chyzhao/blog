@@ -1,0 +1,502 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Docker命令解读(一) | Sunshine&#39;s Code Space</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, minimum-scale=1">
+    
+    <meta name="author" content="Chy Zhao">
+    
+    <meta name="description" content="Docker命令解读系列文章将系统讲解Docker使用的命令，方便大家学习Docker的基本操作。在写这个系列文章的时候，主要参考了Docker官方的文档，有些内容是直接的翻译。原文档地址 Docker Docs转载请注明出处">
+    
+    
+    
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/pacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/pacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css" type="text/css">
+</head>
+
+  <body>
+    <header>
+      <div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="Sunshine&#39;s Code Space" title="Sunshine&#39;s Code Space"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="Sunshine&#39;s Code Space">Sunshine&#39;s Code Space</a></h1>
+				<h2 class="blog-motto">进阶之路</h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					
+						<li><a href="/">主页</a></li>
+					
+						<li><a href="/archives">文章</a></li>
+					
+					<li>
+					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="text" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2015/11/19/Docker命令解读-一/" title="Docker命令解读(一)" itemprop="url">Docker命令解读(一)</a>
+  </h1>
+  <p class="article-author">By
+    
+      <a href="http://yoursite.com" title="Chy Zhao">Chy Zhao</a>
+    </p>
+  <p class="article-time">
+    <time datetime="2015-11-19T10:15:05.000Z" itemprop="datePublished">2015-11-19</time>
+    更新日期:<time datetime="2015-11-30T02:59:43.000Z" itemprop="dateModified">2015-11-30</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		<ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">前台模式VS后台模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">容器标识</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">PID设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4"><span class="toc-number">4.</span> <span class="toc-text">UTS设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5"><span class="toc-number">5.</span> <span class="toc-text">IPC设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6"><span class="toc-number">6.</span> <span class="toc-text">网络模式配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7"><span class="toc-number">7.</span> <span class="toc-text">重启策略</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8"><span class="toc-number">8.</span> <span class="toc-text">清除标识--rm</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9"><span class="toc-number">9.</span> <span class="toc-text">安全设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10"><span class="toc-number">10.</span> <span class="toc-text">自定义cgroups</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11"><span class="toc-number">11.</span> <span class="toc-text">运行时资源约束</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12"><span class="toc-number">12.</span> <span class="toc-text">运行时特权，Linux Capabilities和LXC配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#13"><span class="toc-number">13.</span> <span class="toc-text">日志驱动器(logging driver)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#14"><span class="toc-number">14.</span> <span class="toc-text">改变Dockerfile设定的默认行为</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#14.1"><span class="toc-number">14.1.</span> <span class="toc-text">CMD</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.2"><span class="toc-number">14.2.</span> <span class="toc-text">ENTRYPOINT</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.3"><span class="toc-number">14.3.</span> <span class="toc-text">EXPOSE</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.4"><span class="toc-number">14.4.</span> <span class="toc-text">ENV</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.5"><span class="toc-number">14.5.</span> <span class="toc-text">VOLUME</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.6"><span class="toc-number">14.6.</span> <span class="toc-text">USER</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.7"><span class="toc-number">14.7.</span> <span class="toc-text">WORKDIR</span></a></li></ol></li></ol>
+		</div>
+		
+		<p>Docker命令解读系列文章将系统讲解Docker使用的命令，方便大家学习Docker的基本操作。在写这个系列文章的时候，主要参考了Docker官方的文档，有些内容是直接的翻译。原文档地址 <a href="https://docs.docker.com/" target="_blank" rel="external">Docker Docs</a><br><strong>转载请注明出处</strong><br><a id="more"></a><br>首先从<code>docker run</code> 命令开始解读，这是我们使用最多的命令。当我们需要从镜像创建一个容器来运行我们的应用或提供某种服务时，就要使用<code>docker run</code>命令。<br>官方文档链接：<a href="https://docs.docker.com/engine/reference/run/" target="_blank" rel="external">docker run</a><br>可以运行<code>docker run --help</code>来查看所有的参数和使用方法<br>格式：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ docker run [OPTIONS] IMAGE[:TAGS|@DIGEST] [COMMAND] [ARG...]</span><br></pre></td></tr></table></figure></p>
+<p>从格式可以看出，<code>docker run</code>命令必须指定一个IMAGE来运行容器。容器中有些默认配置和行为，如：</p>
+<ul>
+<li>后台还是前台运行</li>
+<li>容器标识</li>
+<li>容器运行的CPU，内存等限制</li>
+<li>权限等</li>
+</ul>
+<p>使用[OPTIONS]选项可以改变这些默认值，使用这种方法几乎可以改变容器的所有默认行为，这也是为什么<code>docker run</code>命令有如此多选项的原因。<br>更多关于[OPTIONS]的内容可以参考<a href="https://docs.docker.com/engine/reference/commandline/cli/#option-types" target="_blank" rel="external">Option Types</a><br><strong>Note:</strong> 你可能需要使用<code>sudo</code>来运行<code>docker run</code>命令，如果你不想使用<code>sudo</code>来运行它，你可以将你的用户加入到你本机的docker组下(注意，这会影响你的系统的安全性)。<br>下面讲解如下几个方面的[OPTIONS]:</p>
+<ul>
+<li><a href="#1">前台模式VS后台模式</a></li>
+<li><a href="#2">容器标识</a></li>
+<li><a href="#3">PID设置</a></li>
+<li><a href="#4">UTS设置</a></li>
+<li><a href="#5">IPC设置</a></li>
+<li><a href="#6">网络模式设置</a></li>
+<li><a href="#7">重启策略 <code>--restart</code></a></li>
+<li><a href="#8">清除标识 <code>--rm</code></a></li>
+<li><a href="#9">安全设置</a></li>
+<li><a href="#10">自定义cgroups</a></li>
+<li><a href="#11">运行时资源约束</a></li>
+<li><a href="#12">运行时特权，Linux Capabilities和LXC配置</a></li>
+<li><a href="#13">日志驱动器(logging driver)</a></li>
+<li><a href="#14">改变Dockerfile设定的默认行为</a></li>
+</ul>
+<h3 id="1">前台模式VS后台模式</h3>
+
+<p>使用<code>docker run</code>命令运行一个容器时，我们可以选择是让他后台运行（detached模式）或者前台运行（foreground模式【默认】）</p>
+<p><strong>后台模式</strong></p>
+<p>使用detached模式运行容器，需要在<code>docker run</code> 命令中指定<code>-d=true</code>（或-d）选项。使用detached模式运行起来的容器停止时不会自动移除，也就是说，在使用了<code>-d</code>（或<code>-d=true</code>）选项的<code>docker run</code>命令中不能指定<code>--rm</code>选项。<br>不要将类似于下面的命令传递给一个以detached模式运行起来的容器：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service XXX start</span><br></pre></td></tr></table></figure></p>
+<p>例如下面的命令试图在容器中启动nginx，运行时指定了-d选项：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run <span class="operator">-d</span> -p <span class="number">80</span>:<span class="number">80</span> nginx_image service nginx start</span><br></pre></td></tr></table></figure></p>
+<p>这确实启动了容器中的nginx服务，但是容器却没有保持运行。因为容器中的祖先进程（在这个例子中就是<code>service nginx start</code>）执行完返回，按照容器的设计，容器中的祖先进程返回后容器就停止了。结果，nginx服务启动了但不能使用。<br>在这个例子中，我们应该使用这样的命令：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run <span class="operator">-d</span> -p <span class="number">80</span>:<span class="number">80</span> nginx_image nginx -g <span class="string">'daemon off;'</span></span><br></pre></td></tr></table></figure></p>
+<p>要与使用detached模式运行起来的容器交换信息，需要使用网络或共享卷（shared volumes）,因为在<code>detached</code>模式下<code>docker run</code>命令执行完后，容器就不再监听命令行了。<br>要重新定位到容器可以使用<code>docker attach</code>命令(参考<a href="https://docs.docker.com/engine/reference/commandline/attach/" target="_blank" rel="external"><code>attach</code></a>)。</p>
+<p><strong>前台模式</strong></p>
+<p>前台模式下，<code>docker run</code>命令会在新的容器中启动一个进程，并将这个进程的标准输入，标准输出和标准出错绑定到控制台上(甚至是一个伪TTY客户端)。这些都是可以配置的。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">-a</span>=[]            : 绑定<span class="string">'STDIN'</span>, <span class="string">'STDOUT'</span>和/或<span class="string">'STDERR'</span></span><br><span class="line">-t=<span class="literal">false</span>         : 分配一个伪TTY终端</span><br><span class="line">--sig-proxy=<span class="literal">true</span> :传递所有的信号给容器中的进程(仅在非tty模式下有效)</span><br><span class="line">-i=<span class="literal">false</span>         :使STDIN保持打开，即使容器没有被连上(not attached)</span><br></pre></td></tr></table></figure></p>
+<p>如果你没有指明<code>-a</code>标识，默认会绑定所有的三个标准IO流。你也可以像下面这样绑定三个中的一个或多个：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run <span class="operator">-a</span> stdin <span class="operator">-a</span> stdout -i  -t ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>如果要开启一个交互式的容器，必须同时指定<code>-i</code>和<code>-t</code>标识，以分配一个tty终端。<code>-i</code>，<code>-t</code>标识经常一起写作<code>-it</code>，在接下来的例子中我们经常这样使用。<br>当标准输出流被重置的时候，<code>-t</code>标识不能指定。<br><strong>Note:</strong>在Linux系统中，PID值为1的进程是被特殊对待的：它屏蔽一切信号的默认行为。也就是说，除非进程被编写成要停止进程，<code>SIGINT</code>，<code>SIGTERM</code>信号不会停止进程。</p>
+<h3 id="2">容器标识</h3>
+
+<p>用户可以通过三种放式识别一个容器：</p>
+<ul>
+<li>长识别码(Long ID)，如：“f78375b1c487e03c9438c729345e54db9d20cfa2ac1fc3494b6eb60872e74778”</li>
+<li>短识别码(Short ID)，如:“f78375b1c487”</li>
+<li>名字(Name),如：“myapp”</li>
+</ul>
+<p>识别码是由<code>docker daemon</code>自动生成的，如果你没有通过<code>--name</code>标识为容器指定命令，docker会为你生成一个随机的名称。但建议你给自己的容器指定一个名称，这样可以使容器的名称更明确。指定了名称后，你可以使用它来定位到你的容器。detached模式和foreground模式运行的容器都可以指定名称。<br><strong>Note:</strong>默认网桥上的容器相互之间的通信也是靠名字标识的。<br>你可以使用<code>--cid-file</code>标识指定将容器的ID写入到一个文件里。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--cid-file=<span class="string">""</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="3">PID设置</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">--pid=<span class="string">""</span>    :给容器设置PID namespace</span><br><span class="line">	  <span class="string">'host'</span>:容器使用主机的PID namespace</span><br></pre></td></tr></table></figure>
+<p>默认情况下，每个容器都有自己的<code>PID namespace</code><br>PID命名空间(PID namespace)提供了进程之间的隔离，<code>PID namespace</code>屏蔽了系统进程的可见性，使进程ID可以复用(包括进程号1)。<br>在某些特殊情况下，你可能需要容器共享主机的进程空间，以使容器中的进程可以访问宿主机上的进程。例如，你可以创建一个带有<code>strace</code>或<code>gdb</code>等调试工具的容器来调试容器中的程序：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --pid=host rhel7 strace -p <span class="number">1234</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="4">UTS设置</h3>
+
+<p>UTS namespace用来隔离容器的名称(hostname),域名(domain)空间。默认情况下，所有的容器，即便是设置了<code>--net=host</code>都有自己的域名空间。将其设置为host将使容器和宿主机共享域名空间。这样的话，容器的主机名将随着宿主机的主机名的改变而改变。也就是说，可以通过一个容器来更改宿主机的主机名。因为<code>--uts=host</code>给了容器更改宿主机名称的所有权限，所以在使用时要慎重考虑。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">--uts=<span class="string">""</span>    :为容器设置域名空间</span><br><span class="line">	  <span class="string">'host'</span>:容器与宿主机共享域名空间</span><br></pre></td></tr></table></figure></p>
+<h3 id="5">IPC设置</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">--ipc=<span class="string">""</span>                    :为容器设置ipc模式</span><br><span class="line">	  <span class="string">'container:&lt;name|id&gt;'</span> :使用另一个容器的ipc命名空间</span><br><span class="line">      <span class="string">'host'</span>                :容器使用宿主机的ipc命名空间</span><br></pre></td></tr></table></figure>
+<p>默认情况下，每个容器都有自己的可用IPC命名空间。<br>IPC命名空间提供容器间共享内存，信号量和消息队列的隔离。<br>共享内存是用来加速进程间通信的存储交换速度。</p>
+<h3 id="6">网络模式配置</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">--dns=[]  :为容器设置DNS服务器</span><br><span class="line">--net=<span class="string">"bridge"</span>:为容器设置网络模式</span><br><span class="line">--add-host=<span class="string">""</span> :在/etc/hosts中添加一行</span><br><span class="line">--mac-address :设置容器的网卡的MAC地址</span><br></pre></td></tr></table></figure>
+<p>默认情况下，容器都有访问外网的权限。用户可以通过<code>docker run --net none</code>关闭容器的网络连接，这同时关闭了容器访问外部和外部访问容器两个方向上的网络连接。如果进行了这样的设置，你就只能通过文件或标准IO来和容器通信了。<br>默认情况下，容器的DNS被设置成宿主机，你可以通过<code>--dns=”“</code>指定其他的DNS服务器<br>关于docker的四种网络模式，我在之前的文章中有过介绍，不再赘述，链接地址：<a href="/2015/11/11/Docker之四种网络模式">Docker之四种网络模式</a></p>
+<h3 id="7">重启策略</h3>
+
+<p>在<code>docker run</code>命令中使用<code>--restart</code>标识可以为容器指定重启策略，这可以决定容器在退出(exit)的时候是否重启。如果为容器设置了<code>--restart</code>标识，在运行<code>docker ps</code>命令时，该容器只会呈现两种状态，<code>Up</code>和<code>Restarting</code>。可以通过<code>docker events</code>命令查看容器的<code>--restart</code>设置。<br>Docker支持如下的重启策略：</p>
+<p><img src="/img/2015-11-21-4.png" alt=""></p>
+<p>容器每次重启之间的时间间隔是指数递增的，初始值为100ms，这样做是为了防止服务器压力过大。也就是说，<code>docker daemon</code>第一次会等待100ms然后重启容器，第二次等待200ms，接下来是400ms，800ms…，直到<code>on-failure</code>的重启次数达到上限，或用户使用了<code>docker stop</code>或<code>docker rm -f</code>命令停止或删除了容器。<br>如果容器被成功重启，间隔时间(delay)会被重置为100ms。<br><strong>Note:</strong><code>--restart</code>和<code>-rm</code>标识不能同时指定。</p>
+<h3 id="8">清除标识<code>--rm</code></h3>
+
+<p>默认情况下，即使容器退出了，容器的文件系统和用户数据也会被保留下来，这一定程度上方便了调试。但是，如果你短暂的使用了一些前台运行的容器，这些容器的文件系统会占用很多空间，而且以后不会用到。以可以通过指定<code>--rm</code>标识来使容器退出时被自动删除。<br><strong>Note:</strong></p>
+<ul>
+<li><code>--rm</code>标识和<code>-d</code>标识不能同时指定</li>
+<li>如果给一个容器指定了<code>--rm</code>标识，当容器文件系统被删除时，它所使用的卷(volumes)也会被删除。也就是说，<code>--rm</code>标识等同于在容器停止后执行如下命令：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker rm -m my_container</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h3 id="9">安全设置</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">--security-opt=<span class="string">"label:user:USER"</span>   : Set the label user <span class="keyword">for</span> the container</span><br><span class="line">--security-opt=<span class="string">"label:role:ROLE"</span>   : Set the label role <span class="keyword">for</span> the container</span><br><span class="line">--security-opt=<span class="string">"label:type:TYPE"</span>   : Set the label <span class="built_in">type</span> <span class="keyword">for</span> the container</span><br><span class="line">--security-opt=<span class="string">"label:level:LEVEL"</span> : Set the label level <span class="keyword">for</span> the container</span><br><span class="line">--security-opt=<span class="string">"label:disable"</span>     : Turn off label confinement <span class="keyword">for</span> the container</span><br><span class="line">--security-opt=<span class="string">"apparmor:PROFILE"</span>  : Set the apparmor profile to be applied</span><br><span class="line">                                     to the container</span><br></pre></td></tr></table></figure>
+<p>&lt;未完待续&gt;</p>
+<h3 id="10">自定义cgroups</h3>
+
+<p>用户可以通过<code>--cgroup-parent</code>标识可以将一个容器放到特定的cgroup中运行。使用这种方式你可以根据自己的需要定义cgroup。</p>
+<h3 id="11">运行时资源约束</h3>
+
+<p>通过下面的选项用户也可以自定义容器的性能参数(资源约束)<br><img src="/img/2015-11-20-1.png" alt=""></p>
+<p><strong>用户区内存约束</strong></p>
+<p>一共有四种方式限制容器中的进程使用的用户区内存的大小：<br><img src="/img/2015-11-20-2.png" alt=""><br>举例：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>上面的命令没有指定任何内存限制，则默认情况下，容器中的进程可以使用任意多的内存。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it -m <span class="number">300</span>M ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>上面仅指定了memory限制，默认情况下，总的虚拟内存大小被设置成memory的两倍，而虚拟内存(virtual memory)=momory+swap。也就是说，上面的容器中的进程可以使用300M memory和300M swap。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it -m <span class="number">300</span>M --memory-swap -<span class="number">1</span> ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>上面的命令限制了memory的大小，同时将swap memory限制设置为无效，意味着容器中的进程可以使用300M memory，且可以使用任意多的swap memory。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it -m <span class="number">300</span>M --memory-swap <span class="number">1</span>G ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>同时指定了<code>-m</code>和<code>--memory-swap</code>选项，此时容器中的进程可以使用300M的memory和700M的swap memory<br><strong>Note:</strong><code>--memory-swap</code>事实上是指定总的虚拟内存的大小，也就是memory+swap memory<br><code>memory-reservation</code>标识指定的内存限制是一种软限制，使用了这种限制之后容器中的进程仍然可以使用硬限制(-m， –memory指定的内存数量)之内的任意多的内存，但当内存资源不足发生争夺的时候，Docker会限制容器中的进程只能使用不超过reservation限定的内存数量。<br>一定要在<code>-m,--memory</code>之后再指定<code>-memory-reservation</code>，否则会不起作用。将其设为0意味着不设置软限制，默认情况下，软限制被设为和硬限制一样的值。<br>换句话说 ，<code>--memory-reservation</code>试图确保当内存资源竞争激烈时，每个容器中的进程会使用不超过其通过<code>--memory-reservation</code>设定的值。<br>例如:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --m <span class="number">500</span>M --memory-reservation <span class="number">200</span>M ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>上面的命令设置容器中进程的内存硬限制为500M，软限制为200M。容器中的进程可以使用小于500M的内存，但当下一次系统资源回收时会强制将容器中进程使用的内存缩小为不大于200M。<br>再比如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --memory-reservation <span class="number">1</span>G ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>这条命令设置了容器中进程的内存软限制为1G内存，没有设置硬限制。此时容器中的进程可以使用任意多的内存。直到资源回收使其减小到不大于1G。<br><code>--memory-reservation</code>使一个容器中的进程不会占用太多内存太长时间。<br>默认情况下，Docker会杀死容器中那些超过了内存限制的进程，可以使用<code>--oom-kill-disable</code>标识改变这种行为。要确保此标识仅在你使用了<code>-m</code>或<code>--memory</code>标识的容器中使用。</p>
+<p><strong>内核内存约束</strong></p>
+<p>与用户区内存不同的是，内核区内存不能被换出(swap out)，这意味着系统服务可能会因为使用了太多的内核区内存而被阻塞。<br>你可以通过<code>--kernel-memory</code>标识指定内核内存限制，这可以阻止当内核内存使用过多时再创建新的进程。<br>事实上，内核区和用户区内存不是独立的，内核区内存限制包含在用户区限制中，也就是说下面的命令:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it -m <span class="number">500</span>M --kernel-memory <span class="number">50</span>M ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>限制了容器中的进程使用的总内存大小不大于500M，其中内核区内存不大于50M。</p>
+<p>内核区内存限制和用户区内存限制之间的关系如下：U表示用户区内存，K表示内核区内存<br><img src="/img/2015-11-20-3.png" alt=""></p>
+<p><strong>CPU时间比例约束</strong></p>
+<p>默认情况下，所有的容器以相同的比例占用CPU时间，可以通过<code>-c</code>或<code>--cpu-shares</code>来改变容器占用CPU的相对权重。默认情况下，这个值被设为1024，如果它被设为0，Docker会忽略这个值，仍然使用默认的1024.<br><strong>Note:</strong>值越大，获得的CPU时间比例越高。<br><code>--cpu-shares</code>标识只适用于容器中运行的是CPU繁忙型的进程，当其它进程不占用CPU时，这些CPU繁忙型的进程可以更多的使用CPU。具体使用的CPU的比例随系统中容器数量的变化而改变。<br>比如：考虑有三个容器的系统，第一个容器的<code>--cpu-shares</code>值被设为1024，另外两个设为512。则第一个容器会获得50%的CPU时间，另外两个各获得25%(不考虑其他进程的消耗)。如果再有第四个进程，其<code>--cpu-shares</code>值也被设为1024，那么第一和第四各获得33%的CPU时间，第二和第三各获得16.5%的CPU时间。<br><strong>Note:</strong>在多CPU核心的系统中，容器占用的CPU时间是被分配到所有的核心中的，也就是说，一个分配比例小于100%的容器有可能占用某个核心100%的CPU时间。</p>
+<p><strong>CPU周期约束</strong></p>
+<p>默认情况下，CPU的周期大小为100ms，用户可以通过<code>--cpu-period</code>标识设置CPU周期，单位为us(微秒)通常情况下，<code>--cpu-period</code>要和<code>--cpu-quota</code>标识一起使用。<br>看下面的例子：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --cpu-period=<span class="number">50000</span> ---cpu-quota=<span class="number">25000</span> ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>这意味着容器每50ms可以获得50%的CPU时间。</p>
+<p><strong>CPU约束</strong></p>
+<p>我们可以通过<code>--cpuset-cpus</code>标识设置容器运行在哪个CPU上，这只适合与多CPU环境中。<br>例如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --cpuset-cpus=<span class="string">"1, 3"</span> ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>容器可以运行在CPU1或CPU3上。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --cpuset-cpus=<span class="string">"0-2"</span> ubuntu /bin/bash</span><br></pre></td></tr></table></figure></p>
+<p>容器可以运行在CPU0,1,2上。</p>
+<p><strong>IO带宽约束</strong></p>
+<p>默认情况下，所有的容器占有IO带宽的权重相同，都是500。可以通过<code>--bikio-weight</code>来改变一个容器相对于其他容器在占用IO带宽方面的权重。<br><code>--blkio-weight</code>可以被设定为10到1000之间的值，值越大权重越大。</p>
+<h3 id="12">运行时特权，Linux Capabilities和LXC配置</h3>
+
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">--cap-add         ：添加Linux Capabilities</span><br><span class="line">--cap-drop        ：移除Linux Capabilities</span><br><span class="line">--privileged=<span class="literal">false</span>：标记容器拥有特权</span><br><span class="line">--device=[]       ：允许容器在非privileged下在内部运行设备</span><br><span class="line">--lxc-conf=[]     ：添加自定义的lxc选项</span><br></pre></td></tr></table></figure>
+<p>默认情况下，Docker容器是没有特权的，也就是说Docker容器不能在容器内部运行像<code>Docker daemon</code>这样的进程。这是因为，默认情况下，容器没有获取设备的权限。但是一个“特权”(privileged)容器可以获取所有的设备。<br>如果用户执行了<code>docker run --privileged</code>,Docker容器会获得宿主机上所有设备的访问权限，并且可以在AppArmor或SElinux上写入一些配置信息。此时，容器中的进程就像运行在宿主机上一样。<br>更多关于<code>--privileged</code>的信息请参考<a href="http://blog.docker.com/2013/09/docker-can-now-run-within-docker/" target="_blank" rel="external">Docker Blog</a><br>如果你想限制某个或某些设备的访问权限，可以使用<code>--device</code>标识，使用它你可以指定在容器内部允许访问的一些设备。例如：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">docker run --device=/dev/snd:/dev/snd...</span><br><span class="line">默认情况下，容器对使用`--device`添加的容器可以进行`<span class="built_in">read</span>`，`write`和`mknod`操作，你可以通过给每一个`--device`指定的设备添加`：rwm`标识改变这些默认行为。</span><br><span class="line">例如：</span><br><span class="line">```bash</span><br><span class="line">docker run --device=/dev/sda:/dev/xvdc:r --rm --it ubuntu fdisk /dev/xvdc</span><br></pre></td></tr></table></figure></p>
+<p>在使用<code>--privileged</code>标识的时候，用户可以使用<code>--cap-add</code>和<code>--cap-drop</code>来添加或移除某些”能力“(Linux Capabilities).<br><strong>Note:</strong>所谓<code>Linux Capabilities</code>是为了将<code>root</code>用户的权限进行进一步细分而设计的，Linux将<code>root</code>用户的权限划分为多个组，每个组可以独立分配。这样，我们就可以给某个用户赋予某一部分超级权限。<br>Docker默认维护了一个可用的Linux Capabilities的table，下面是可以通过<code>--cap-add</code>或<code>--cap-drop</code>添加或移除的Linux Capabilities的表：<br><img src="/img/2015-11-21-1.png" alt=""><br><img src="/img/2015-11-21-2.png" alt=""><br>更多关于Linux Capabilities的信息请查看<a href="http://linux.die.net/man/7/capabilities" target="_blank" rel="external">capabilities(7)-Linux man page</a><br>两个标识都可以使用<code>ALL</code>来添加或移除所有capabilities，比如，用户希望拥有除<code>mknod</code>外的所有capabilities，可以使用如下的命令：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --cap-add=ALL --cap-drop=MKNOD ...</span><br></pre></td></tr></table></figure></p>
+<h3 id="13">日志驱动器(logging driver)</h3>
+
+<p>容器可以使用<code>docker daemon</code>以外的日志logging driver，通过在<code>docker 润</code>命令中指定<code>--logging-driver=VALUE</code>用户可以指定自己的logging driver。<br>下面是支持的logging driver选项：</p>
+<p><img src="/img/2015-11-21-5.png" alt=""></p>
+<p><code>docker logs</code>标识仅对<code>json-file</code>和<code>journald</code>logging driver有效。更多信息请参考<a href="https://docs.docker.com/engine/reference/logging/overview/" target="_blank" rel="external">Configure a logging driver</a></p>
+<h3 id="14">改变Dockerfile设定的默认行为</h3>
+
+<p>当使用Dockerfile创建一个镜像时，往往会在镜像中指定一些容器启动时的默认行为。<br>其中有四个Dockerfile指令的默认值是无法修改的,这四个指令是：<code>FROM</code>,<code>MAINTAINER</code>,<code>RUN</code>和<code>ADD</code>。所有其他指令的默认行为都可以在<code>docker run</code>命令中修改。<br>接下来分析以下几个命令：</p>
+<ul>
+<li><a href="#14.1">CMD</a></li>
+<li><a href="#14.2">ENTRYPOINT</a></li>
+<li><a href="#14.3">EXPOSE</a></li>
+<li><a href="#14.4">ENV</a></li>
+<li><a href="#14.5">VOLUME</a></li>
+<li><a href="#14.6">USER</a></li>
+<li><a href="#14.7">WORKDIR</a></li>
+</ul>
+<p>关于<code>Dockerfile</code>指令，以前写过一篇文章，可以作为参考<a href="/2015/11/07/Dockerfile-指令">Dockerfile指令</a></p>
+<h4 id="14.1">CMD</h4>
+
+<p><code>CMD</code>是镜像创建者在Dockerfile中指定的容器运行时默认启动的命令。用户可以通过在<code>docker run</code>中设定新的<code>COMMAND</code>值覆盖它。<br>如果Dockerfile中也指定了<code>ENTRYPOINT</code>，则<code>CMD</code>的值或<code>docker run</code>中<code>COMMAND</code>的值会作为参数传递给<code>ENTRYPOINT</code>指定的命令。</p>
+<h4 id="14.2">ENTRYPOINT</h4>
+
+<p><code>ENTRYPOINT</code>指令和<code>CMD</code>指令相似，都是指定容器运行时要执行的命令，但它相对更难被覆盖，如果在Dockerfile中指定了<code>ENTRYPOINT</code>，则<code>CMD</code>的值和<code>docker run</code>中<code>COMMAND</code>的值会作为参数传递给<code>ENTRYPOINT</code>指定的命令。<br>要覆盖<code>ENTRYPOINT</code>中的命令，需要使用<code>--entrypoint=&quot;&quot;</code>标识。<br>举例：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it --entrypoint /bin/bash example/redis</span><br></pre></td></tr></table></figure></p>
+<p>上面的命令使用<code>--entrypoint</code>覆盖了example/redis镜像中原来的命令(比如：<code>/usr/bin/redis-server</code>)</p>
+<h4 id="14.3">EXPOSE</h4>
+
+<p><code>EXPOSE</code>用于指定容器像外部暴露的端口，一般用于容器对外提供服务的情况(比如web服务使用<code>EXPOSE 80</code>)。<br>使用<code>--expose</code>选项可以添加暴露的端口。<br>与<code>EXPOSE</code>相关的还有<code>-p</code>和<code>-P</code>标识，这部分可直接参考官方的文档<a href="https://docs.docker.com/engine/reference/run/#expose-incoming-ports" target="_blank" rel="external">EXPOSE</a></p>
+<h4 id="14.4">ENV</h4>
+
+<p>容器创建时，Docker默认会设定如下的环境变量：<br><img src="/img/2015-11-21-3.png" alt=""><br><code>ENV</code>指令用于添加环境变量。此外，也可以在<code>docker run</code>命令中使用<code>-e</code>标识添加环境变量，甚至覆盖原来已有的和<code>ENV</code>指定的环境变量。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it <span class="operator">-e</span> <span class="string">"deep=purple"</span> --rm ubuntu /bin/bash -c <span class="built_in">export</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="14.5">VOLUME</h4>
+
+<p>关于<code>VOLUME</code>已经提到过很多次了，除了参考上面的<code>Dockerfile指令</code>之外，还可以参考：<a href="/2015/11/08/Docker之数据管理">Docker之数据管理</a><br>在此不再赘述</p>
+<h4 id="14.6">USER</h4>
+
+<p>默认情况下，容器中的用户是<code>root</code>用户，也可以添加其他的用户，用户之间以名字标识。<br><code>Dockerfile</code>的创建者可以通过<code>USER</code>指令指定容器中运行第一个进程的user。当使用<code>docker run</code>启动容器时，可以通过<code>-u</code>标识改变<code>USER</code>的默认值。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-u=<span class="string">""</span> Username or ID</span><br></pre></td></tr></table></figure></p>
+<h4 id="14.7">WORKDIR</h4>
+
+<p>容器中运行程序的默认工作目录是根目录<code>/</code>，可以使用<code>WORKDIR</code>指令在<code>Dockerfile</code>中指定其他的目录，<code>WORKDIR</code>的值可以使用如下的方法覆盖：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-w=<span class="string">""</span> working dir inside the container</span><br></pre></td></tr></table></figure></p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/docker/">docker</a>
+  </div>
+
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Docker-Commands/">Docker Commands</a>
+</div>
+
+
+
+<div class="article-share" id="share">
+
+  <div data-url="http://yoursite.com/2015/11/19/Docker命令解读-一/" data-title="Docker命令解读(一) | Sunshine&#39;s Code Space" data-tsina="null" class="share clearfix">
+  </div>
+
+</div>
+</footer>   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+ <div class="prev" >
+ <a href="/2015/11/21/Docker命令解读-二/" title="Docker命令解读(二)">
+  <strong>PREVIOUS:</strong><br/>
+  <span>
+  Docker命令解读(二)</span>
+</a>
+</div>
+
+
+<div class="next">
+<a href="/2015/11/11/Docker之四种网络模式/"  title="Docker之四种网络模式">
+ <strong>NEXT:</strong><br/> 
+ <span>Docker之四种网络模式
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+<section class="comment">
+	<div class="ds-thread"></div>
+</section>
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+  <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1"><span class="toc-number">1.</span> <span class="toc-text">前台模式VS后台模式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2"><span class="toc-number">2.</span> <span class="toc-text">容器标识</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3"><span class="toc-number">3.</span> <span class="toc-text">PID设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4"><span class="toc-number">4.</span> <span class="toc-text">UTS设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5"><span class="toc-number">5.</span> <span class="toc-text">IPC设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6"><span class="toc-number">6.</span> <span class="toc-text">网络模式配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7"><span class="toc-number">7.</span> <span class="toc-text">重启策略</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8"><span class="toc-number">8.</span> <span class="toc-text">清除标识--rm</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9"><span class="toc-number">9.</span> <span class="toc-text">安全设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#10"><span class="toc-number">10.</span> <span class="toc-text">自定义cgroups</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#11"><span class="toc-number">11.</span> <span class="toc-text">运行时资源约束</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#12"><span class="toc-number">12.</span> <span class="toc-text">运行时特权，Linux Capabilities和LXC配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#13"><span class="toc-number">13.</span> <span class="toc-text">日志驱动器(logging driver)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#14"><span class="toc-number">14.</span> <span class="toc-text">改变Dockerfile设定的默认行为</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#14.1"><span class="toc-number">14.1.</span> <span class="toc-text">CMD</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.2"><span class="toc-number">14.2.</span> <span class="toc-text">ENTRYPOINT</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.3"><span class="toc-number">14.3.</span> <span class="toc-text">EXPOSE</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.4"><span class="toc-number">14.4.</span> <span class="toc-text">ENV</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.5"><span class="toc-number">14.5.</span> <span class="toc-text">VOLUME</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.6"><span class="toc-number">14.6.</span> <span class="toc-text">USER</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14.7"><span class="toc-number">14.7.</span> <span class="toc-text">WORKDIR</span></a></li></ol></li></ol>
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+			<li><a href="/categories/Docker-Commands/" title="Docker Commands">Docker Commands<sup>8</sup></a></li>
+		
+			<li><a href="/categories/Docker-Network/" title="Docker Network">Docker Network<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Docker-Others/" title="Docker Others">Docker Others<sup>5</sup></a></li>
+		
+			<li><a href="/categories/Docker-Source-Analysis/" title="Docker Source Analysis">Docker Source Analysis<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Docker-三剑客/" title="Docker 三剑客">Docker 三剑客<sup>4</sup></a></li>
+		
+			<li><a href="/categories/Golang/" title="Golang">Golang<sup>3</sup></a></li>
+		
+			<li><a href="/categories/Kubernetes/" title="Kubernetes">Kubernetes<sup>2</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  
+<div class="tagslist">
+	<p class="asidetitle">标签</p>
+		<ul class="clearfix">
+		
+			<li><a href="/tags/Kubernetes/" title="Kubernetes">Kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/docker/" title="docker">docker<sup>26</sup></a></li>
+		
+			<li><a href="/tags/golang/" title="golang">golang<sup>3</sup></a></li>
+		
+			<li><a href="/tags/kubernetes/" title="kubernetes">kubernetes<sup>1</sup></a></li>
+		
+			<li><a href="/tags/pod/" title="pod">pod<sup>1</sup></a></li>
+		
+		</ul>
+</div>
+
+
+  <div class="rsspart">
+	<a href="null" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<div class="social-font clearfix">
+		
+		
+		
+		
+		
+	</div>
+		<p class="copyright">Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/A-limon/pacman" target="_blank" title="Pacman">Pacman</a> © 2016 
+		
+		<a href="http://yoursite.com" target="_blank" title="Chy Zhao">Chy Zhao</a>
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.1.0.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else
+    {
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      h  = $('article h2')
+      ah = $('article h2'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  if(ah.length==0){
+    t.css('display','none');
+  }else{
+    c.click(function(){
+      ta.css('display', 'block').addClass('fadeIn');
+    });
+    o.click(function(){
+      ta.css('display', 'none');
+    });
+    $(window).scroll(function(){
+      ta.css("top",Math.max(140,320-$(this).scrollTop()));
+    });
+  };
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina');
+  var html = [
+  '<a href="#" class="overlay" id="qrcode"></a>',
+  '<div class="qrcode clearfix"><span>扫描二维码分享到微信朋友圈</span><a class="qrclose" href="#share"></a><strong>Loading...Please wait</strong><img id="qrcode-pic" data-src="http://s.jiathis.com/qrcode.php?url=' + encodedUrl + '"/></div>',
+  '<a href="#textlogo" class="article-back-to-top" title="Top"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="QRcode"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="Weibo"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+  $('.article-share-qrcode').click(function(){
+    var imgSrc = $('#qrcode-pic').attr('data-src');
+    $('#qrcode-pic').attr('src', imgSrc);
+    $('#qrcode-pic').load(function(){
+        $('.qrcode strong').text(' ');
+    });
+  });
+});     
+</script>
+
+
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zhaochenyang"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script> 
+
+
+
+
+
+  </body>
+</html>
